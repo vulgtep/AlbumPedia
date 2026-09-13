@@ -24,9 +24,9 @@ Abri el navegador e ingresa a http://localhost:8080
 
 # Ejecución de Tests (TP2)
 
-El proyecto incluye pruebas automatizadas creadas con el paquete nativo `testing` de Go (`queries_test.go`). Todo el ciclo de vida de las pruebas está orquestado con `make`.
+El proyecto incluye pruebas automatizadas creadas con el paquete nativo `testing` de Go (`queries_test.go`).
 
-Para ejecutar las pruebas, asegúrate de tener Docker abierto y corre el siguiente comando en la raíz del proyecto:
+Para ejecutar las pruebas, corre el siguiente comando en la raíz del proyecto:
 
 ```bash
 make make-test
