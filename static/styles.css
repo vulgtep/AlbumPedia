@@ -1,0 +1,33 @@
+/* static/styles.css */
+body {
+    background-color: #F4F5F7;
+    font-family: 'Sans-serif', sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+#titulo {
+    font-family: 'Sans-serif', sans-serif;
+    font-size: 4rem;
+    text-transform: uppercase;
+    color: #000000; 
+    margin-bottom: 40px;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.26);
+}
+
+#texto {
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: #2C2E3B;
+    font-weight: 300;
+    text-align: justify;
+    border-left: 1px solid #444;
+    padding-left: 25px;
+    margin-left: 20px;
+}
+.resaltar{
+    color: #4169E1;
+}
