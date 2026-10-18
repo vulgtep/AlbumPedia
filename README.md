@@ -115,7 +115,7 @@ make db-down
 
 ## Documentación de la API
 
-La API está documentada con OpenAPI 3.0 en [`docs/openapi.yaml`](docs/openapi.yaml).
+La API está documentada con OpenAPI 3.0.
 
 Para verla de forma interactiva:
 
