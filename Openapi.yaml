@@ -1,0 +1,54 @@
+openapi: 3.0.0
+info:
+  title: AlbumPedia API
+  version: 1.0.0
+paths:
+  /albums:
+    get:
+      summary: Listar álbumes
+      responses:
+        "200":
+          description: Lista de álbumes
+        "500":
+          description: Error obteniendo álbumes
+    post:
+      summary: Crear un álbum
+      responses:
+        "201":
+          description: Álbum creado
+        "400":
+          description: JSON inválido o título vacío
+        "500":
+          description: Error creando álbum
+  /albums/{id}:
+    get:
+      summary: Obtener un álbum
+      responses:
+        "200":
+          description: Álbum encontrado
+        "400":
+          description: ID inválido
+        "404":
+          description: Álbum no encontrado
+        "500":
+          description: Error de base de datos
+    put:
+      summary: Actualizar un álbum
+      responses:
+        "200":
+          description: Álbum actualizado
+        "400":
+          description: ID o JSON inválido, o título vacío
+        "404":
+          description: Álbum no encontrado
+        "500":
+          description: Error actualizando álbum
+    delete:
+      summary: Eliminar un álbum
+      responses:
+        "204":
+          description: Álbum eliminado
+        "400":
+          description: ID inválido
+        "500":
+          description: Error eliminando álbum
