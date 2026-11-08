@@ -40,22 +40,19 @@ func main() {
 	// 4. Crear instancia del repositorio generado por sqlc
 	repo := sqlc.New(db)
 
-	// 5. Inyectar el repositorio en el servidor
+	// 5. Inyectar el repositorio en el servidor y registrar rutas SSR
 	server := handlers.NewServer(repo)
 
-	http.HandleFunc("/albums", server.AlbumsHandlerSinID)
-	http.HandleFunc("/albums/", server.AlbumsHandlerConID)
-
-	// 6. Iniciar el servidor HTTP
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/index.html")
-	})
-	fmt.Println("Servidor escuchando en http://localhost:8080")
-	err2 := http.ListenAndServe(":8080", nil)
-	if err2 != nil {
-		fmt.Println("Error:", err2)
+	http.HandleFunc("/", server.HomeHandler)
+	http.HandleFunc("/albums", server.CreateAlbumHandler)
+	http.HandleFunc("/albums/delete", server.DeleteAlbumHandler)
+
+	// 6. Iniciar el servidor HTTP
+	fmt.Println("Servidor SSR escuchando en http://localhost:8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal("Error en el servidor HTTP: ", err)
 	}
 }

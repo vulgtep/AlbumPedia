@@ -426,6 +426,10 @@ body {
     gap: 8px;
 }
 
+.delete-form {
+    margin: 0;
+}
+
 .empty-state,
 .loading-text {
     grid-column: 1 / -1;

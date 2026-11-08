@@ -131,3 +131,74 @@ Para verla de forma interactiva:
 | GET    | /albums/{id} | Obtener un álbum    |
 | PUT    | /albums/{id} | Actualizar un álbum |
 | DELETE | /albums/{id} | Eliminar un álbum   |
+
+---
+
+# Interfaz de Usuario Cliente (TP4)
+
+En esta etapa se desarrolló el frontend del proyecto utilizando **HTML5, CSS3 (Flexbox y CSS Grid) y JavaScript nativo** (`static/index.html`, `static/styles.css` y `static/app.js`) para consumir de forma asíncrona la API REST del servidor Go:
+
+* **Listado dinámico (`GET /albums`):** Al cargar la página (`DOMContentLoaded`), el cliente realiza una petición `fetch` para obtener los álbumes en formato JSON y genera las tarjetas dinámicamente en el DOM, incluyendo un visor interactivo con transición animada entre portada y contraportada.
+* **Alta de álbumes (`POST /albums`):** El formulario captura el evento `submit`, previene la recarga por defecto (`event.preventDefault()`), valida los campos obligatorios (`titulo`, `banda` y `genero`) y envía el payload JSON a la API, refrescando el listado al finalizar.
+* **Borrado con Delegación de Eventos (`DELETE /albums/{id}`):** Se implementó un único listener sobre el contenedor `#albums-container` para interceptar los clics en los botones de borrado generados dinámicamente, eliminando el registro en el servidor y actualizando la vista.
+
+---
+
+# Server-Side Rendering con `templ` (TP5)
+
+## Cambios de Arquitectura
+
+En el TP5 se reemplazó la arquitectura de cliente separado (API JSON + Fetch en JS) por una aplicación **Server-Side Rendered (SSR)** integrada directamente en el servidor Go utilizando **[`templ`](https://templ.guide/)**.
+
+### 1. Componentes de Vista (`views/`)
+La interfaz fue dividida en componentes `.templ` fuertemente tipados que se compilan a código Go nativo (`views/*_templ.go`):
+
+* **`views/layout.templ`:** Define el componente `Layout(title string)` con la estructura base del documento HTML (`<html>`, `<head>`, `<body>`), integrando **Pico.css** junto con `/static/styles.css`, y el componente `HomePage(albums []sqlc.Album)` que compone el formulario y la lista.
+* **`views/entity_form.templ`:** Define `EntityForm()`, que renderiza el formulario clásico `<form method="POST" action="/albums">` con los campos obligatorios (`titulo`, `banda`, `genero`) y desplegable de campos opcionales.
+* **`views/entity_list.templ`:** Define `EntityList(albums []sqlc.Album)`, que recibe el slice `[]sqlc.Album` generado por `sqlc` y renderiza en el servidor el catálogo de tarjetas, el visor de portada/contraportada y el formulario de borrado.
+
+### 2. Refactorización del Servidor y Patrón Post/Redirect/Get (PRG)
+Se actualizaron `cmd/server/main.go` y `pkg/handlers/albums.go` para gestionar el ciclo SSR clásico:
+
+| Método | Ruta | Handler | Descripción |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | `HomeHandler` | Obtiene todos los álbumes con `Queries.ListAlbums` y renderiza `views.HomePage(albums)` en el `http.ResponseWriter`. |
+| `POST` | `/albums` | `CreateAlbumHandler` | Parsea los datos del formulario (`r.ParseForm()`), inserta el nuevo álbum con `Queries.CreateAlbum` y redirige a `/` mediante `http.Redirect` (`HTTP 303 See Other`), implementando el patrón **Post/Redirect/Get (PRG)**. |
+| `POST` | `/albums/delete` | `DeleteAlbumHandler` | Elimina un álbum por su `id` usando `Queries.DeleteAlbum` y redirige a `/` aplicando el patrón **PRG**. |
+
+## Instrucciones de Generación y Ejecución (TP5)
+
+**Requisitos previos:** Docker, Go, `sqlc`, `templ` y `make`.
+
+Para instalar el CLI de `templ` (si no está instalado):
+```bash
+go install github.com/a-h/templ/cmd/templ@v0.3.857
+```
+
+### Forma automática (con un solo comando)
+
+Se agregó el comando `make start` en el `makefile`, el cual levanta PostgreSQL en Docker, espera a que la base de datos esté lista, genera el código de `sqlc` y `templ`, y ejecuta el servidor Go:
+
+```bash
+make start
+```
+
+### Forma paso a paso
+
+Si preferís ejecutar cada etapa manualmente:
+
+```bash
+make db-up      # 1. Levanta el contenedor de PostgreSQL en segundo plano
+make db-wait    # 2. Espera a que la base de datos acepte conexiones
+make sqlc       # 3. Genera el código Go de acceso a datos (DB/sqlc)
+make templ      # 4. Compila los componentes .templ a código Go (views/*_templ.go)
+make run        # 5. Ejecuta el servidor en http://localhost:8080
+```
+
+Una vez iniciado el servidor, abrí tu navegador en **http://localhost:8080** para visualizar el listado de álbumes y crear nuevos registros desde el formulario con recarga SSR completa.
+
+Para detener los contenedores y limpiar los volúmenes al finalizar:
+
+```bash
+make db-down
+```

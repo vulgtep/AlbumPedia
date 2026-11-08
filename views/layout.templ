@@ -1,0 +1,36 @@
+package views
+
+import "albumPedia.com/albumPedia/DB/sqlc"
+
+templ Layout(title string) {
+	<!DOCTYPE html>
+	<html lang="es" data-theme="light">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title }</title>
+			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
+			<link rel="stylesheet" type="text/css" href="/static/styles.css"/>
+		</head>
+		<body>
+			<header class="header">
+				<h1 id="titulo">Album<span class="resaltar">pedia</span></h1>
+				<p id="texto">
+					Nuestra intención con esta página es registrar nuestros álbumes de música favoritos.
+					Administrá tu colección agregando, consultando o eliminando discos.
+				</p>
+			</header>
+			<main class="container">
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ HomePage(albums []sqlc.Album) {
+	@Layout("AlbumPedia - Catálogo de Álbumes") {
+		@EntityForm()
+		@EntityList(albums)
+	}
+}
+

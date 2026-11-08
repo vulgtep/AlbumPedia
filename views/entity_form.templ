@@ -1,0 +1,64 @@
+package views
+
+templ EntityForm() {
+	<section class="card form-section">
+		<h2 id="form-title">Agregar Nuevo Álbum</h2>
+		<form id="album-form" method="POST" action="/albums">
+			<div class="form-grid">
+				<div class="form-group">
+					<label for="input-titulo">Título <span class="required">*</span></label>
+					<input type="text" id="input-titulo" name="titulo" placeholder="Ej: Artaud" required maxlength="150"/>
+				</div>
+				<div class="form-group">
+					<label for="input-banda">Banda / Artista <span class="required">*</span></label>
+					<input type="text" id="input-banda" name="banda" placeholder="Ej: Pescado Rabioso" required maxlength="150"/>
+				</div>
+				<div class="form-group">
+					<label for="input-genero">Género <span class="required">*</span></label>
+					<input type="text" id="input-genero" name="genero" placeholder="Ej: Rock" required maxlength="100"/>
+				</div>
+			</div>
+			<details class="optional-fields">
+				<summary>Campos adicionales opcionales (Productor, Portada, Duración, etc.)</summary>
+				<div class="form-grid optional-grid">
+					<div class="form-group">
+						<label for="input-productor">Productor</label>
+						<input type="text" id="input-productor" name="productor" placeholder="Ej: Jorge Álvarez" maxlength="150"/>
+					</div>
+					<div class="form-group">
+						<label for="input-artistas">Lista de Artistas</label>
+						<input type="text" id="input-artistas" name="lista_artistas" placeholder="Ej: Luis Alberto Spinetta" maxlength="150"/>
+					</div>
+					<div class="form-group">
+						<label for="input-duracion">Duración (minutos)</label>
+						<input type="number" id="input-duracion" name="duracion_minutos" placeholder="Ej: 37" min="1"/>
+					</div>
+					<div class="form-group">
+						<label for="input-fecha">Fecha de Salida</label>
+						<input type="date" id="input-fecha" name="fecha_salida"/>
+					</div>
+					<div class="form-group">
+						<label for="input-portada">URL de Portada</label>
+						<input type="url" id="input-portada" name="portada" placeholder="https://ejemplo.com/portada.jpg" maxlength="255"/>
+					</div>
+					<div class="form-group">
+						<label for="input-contraportada">URL de Contraportada</label>
+						<input type="url" id="input-contraportada" name="contraportada" placeholder="https://ejemplo.com/contraportada.jpg" maxlength="255"/>
+					</div>
+					<div class="form-group full-width">
+						<label for="input-link">Link para Escuchar (Spotify, YouTube, etc.)</label>
+						<input type="url" id="input-link" name="link_escucha" placeholder="https://open.spotify.com/..." maxlength="500"/>
+					</div>
+					<div class="form-group full-width">
+						<label for="input-observacion">Observación / Reseña</label>
+						<textarea id="input-observacion" name="observacion" rows="3" placeholder="Tus comentarios sobre el álbum..." maxlength="1000"></textarea>
+					</div>
+				</div>
+			</details>
+			<div class="form-actions">
+				<button type="submit" id="btn-submit" class="btn btn-primary">Guardar Álbum</button>
+			</div>
+		</form>
+	</section>
+}
+

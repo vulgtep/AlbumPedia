@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"albumPedia.com/albumPedia/DB/sqlc"
+	"albumPedia.com/albumPedia/views"
 )
 
 // Server contiene el repositorio generado por sqlc
@@ -19,134 +20,132 @@ func NewServer(queries *sqlc.Queries) *Server {
 	return &Server{Queries: queries}
 }
 
-// AlbumsHandler maneja la colección general (/albums)
-func (s *Server) AlbumsHandlerSinID(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.listAlbums(w, r)
-	case http.MethodPost:
-		s.createAlbum(w, r)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+// GET / - Obtiene todos los álbumes y renderiza la vista principal con templ
+func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
 	}
-}
-
-// SingleAlbumHandler maneja un álbum específico (/albums/{id})
-func (s *Server) AlbumsHandlerConID(w http.ResponseWriter, r *http.Request) {
-	// ["", "albums", "ID"]
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) != 3 {
-		http.Error(w, "URL inválida", http.StatusBadRequest)
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	id, err := strconv.Atoi(parts[2])
+	albums, err := s.Queries.ListAlbums(r.Context())
+	if err != nil {
+		http.Error(w, "Error obteniendo álbumes: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := views.HomePage(albums).Render(r.Context(), w); err != nil {
+		http.Error(w, "Error renderizando la página", http.StatusInternalServerError)
+	}
+}
+
+// POST /albums - Parsea el formulario HTML, crea el álbum en BD y aplica Post/Redirect/Get (PRG)
+func (s *Server) CreateAlbumHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Error procesando el formulario: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	titulo := strings.TrimSpace(r.FormValue("titulo"))
+	banda := strings.TrimSpace(r.FormValue("banda"))
+	genero := strings.TrimSpace(r.FormValue("genero"))
+
+	if titulo == "" || banda == "" || genero == "" {
+		http.Error(w, "Título, banda y género son campos obligatorios", http.StatusBadRequest)
+		return
+	}
+
+	arg := sqlc.CreateAlbumParams{
+		Titulo:          titulo,
+		Banda:           banda,
+		Genero:          genero,
+		Productor:       parseNullString(r.FormValue("productor")),
+		ListaArtistas:   parseNullString(r.FormValue("lista_artistas")),
+		Portada:         parseNullString(r.FormValue("portada")),
+		Contraportada:   parseNullString(r.FormValue("contraportada")),
+		DuracionMinutos: parseNullInt32(r.FormValue("duracion_minutos")),
+		FechaSalida:     parseNullTime(r.FormValue("fecha_salida")),
+		LinkEscucha:     parseNullString(r.FormValue("link_escucha")),
+		Observacion:     parseNullString(r.FormValue("observacion")),
+	}
+
+	if _, err := s.Queries.CreateAlbum(r.Context(), arg); err != nil {
+		http.Error(w, "Error creando álbum: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Patrón Post/Redirect/Get (PRG)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// POST /albums/delete - Elimina un álbum por ID y redirige a la página principal (PRG)
+func (s *Server) DeleteAlbumHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Formulario inválido", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(strings.TrimSpace(r.FormValue("id")))
 	if err != nil {
 		http.Error(w, "ID de álbum inválido", http.StatusBadRequest)
 		return
 	}
 
-	albumID := int32(id)
-
-	switch r.Method {
-	case http.MethodGet:
-		s.getAlbum(w, r, albumID)
-	case http.MethodPut:
-		s.updateAlbum(w, r, albumID)
-	case http.MethodDelete:
-		s.deleteAlbum(w, r, albumID)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-// POST /albums
-func (s *Server) createAlbum(w http.ResponseWriter, r *http.Request) {
-	var arg sqlc.CreateAlbumParams
-	if err := json.NewDecoder(r.Body).Decode(&arg); err != nil {
-		http.Error(w, "JSON inválido: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if strings.TrimSpace(arg.Titulo) == "" {
-		http.Error(w, "El título no puede estar vacío", http.StatusBadRequest)
-		return
-	}
-
-	album, err := s.Queries.CreateAlbum(r.Context(), arg)
-	if err != nil {
-		http.Error(w, "Error creando álbum", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated) // HTTP 201
-	json.NewEncoder(w).Encode(album)
-}
-
-// GET /albums
-func (s *Server) listAlbums(w http.ResponseWriter, r *http.Request) {
-	albums, err := s.Queries.ListAlbums(r.Context())
-	if err != nil {
-		http.Error(w, "Error obteniendo álbumes", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(albums)
-}
-
-// GET /albums/{id}
-func (s *Server) getAlbum(w http.ResponseWriter, r *http.Request, id int32) {
-	album, err := s.Queries.GetAlbum(r.Context(), id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			http.Error(w, "Álbum no encontrado", http.StatusNotFound) // HTTP 404
-			return
-		}
-		http.Error(w, "Error de base de datos", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(album)
-}
-
-// PUT /albums/{id}
-func (s *Server) updateAlbum(w http.ResponseWriter, r *http.Request, id int32) {
-	var arg sqlc.UpdateAlbumParams
-	if err := json.NewDecoder(r.Body).Decode(&arg); err != nil {
-		http.Error(w, "JSON inválido", http.StatusBadRequest)
-		return
-	}
-
-	arg.ID = id
-	if strings.TrimSpace(arg.Titulo) == "" {
-		http.Error(w, "El título no puede estar vacío", http.StatusBadRequest)
-		return
-	}
-
-	album, err := s.Queries.UpdateAlbum(r.Context(), arg)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			http.Error(w, "Álbum no encontrado", http.StatusNotFound)
-			return
-		}
-		http.Error(w, "Error actualizando álbum", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(album)
-}
-
-// DELETE /albums/{id}
-func (s *Server) deleteAlbum(w http.ResponseWriter, r *http.Request, id int32) {
-	err := s.Queries.DeleteAlbum(r.Context(), id)
-	if err != nil {
+	if err := s.Queries.DeleteAlbum(r.Context(), int32(id)); err != nil {
 		http.Error(w, "Error eliminando álbum", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent) // HTTP 204
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func parseNullString(val string) sql.NullString {
+	trimmed := strings.TrimSpace(val)
+	return sql.NullString{
+		String: trimmed,
+		Valid:  trimmed != "",
+	}
+}
+
+func parseNullInt32(val string) sql.NullInt32 {
+	trimmed := strings.TrimSpace(val)
+	if trimmed == "" {
+		return sql.NullInt32{Valid: false}
+	}
+	n, err := strconv.Atoi(trimmed)
+	if err != nil || n <= 0 {
+		return sql.NullInt32{Valid: false}
+	}
+	return sql.NullInt32{
+		Int32: int32(n),
+		Valid: true,
+	}
+}
+
+func parseNullTime(val string) sql.NullTime {
+	trimmed := strings.TrimSpace(val)
+	if trimmed == "" {
+		return sql.NullTime{Valid: false}
+	}
+	t, err := time.Parse("2006-01-02", trimmed)
+	if err != nil {
+		return sql.NullTime{Valid: false}
+	}
+	return sql.NullTime{
+		Time:  t,
+		Valid: true,
+	}
 }

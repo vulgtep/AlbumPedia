@@ -1,0 +1,175 @@
+package views
+
+import (
+	"fmt"
+	"albumPedia.com/albumPedia/DB/sqlc"
+)
+
+func initialCoverURL(album sqlc.Album) string {
+	if album.Portada.Valid && album.Portada.String != "" {
+		return album.Portada.String
+	}
+	if album.Contraportada.Valid && album.Contraportada.String != "" {
+		return album.Contraportada.String
+	}
+	return ""
+}
+
+func initialCoverLabel(album sqlc.Album) string {
+	if album.Portada.Valid && album.Portada.String != "" {
+		return "Portada"
+	}
+	return "Contraportada"
+}
+
+func initialCoverShowing(album sqlc.Album) string {
+	if album.Portada.Valid && album.Portada.String != "" {
+		return "portada"
+	}
+	return "contraportada"
+}
+
+func hasBothCovers(album sqlc.Album) bool {
+	return album.Portada.Valid && album.Portada.String != "" &&
+		album.Contraportada.Valid && album.Contraportada.String != ""
+}
+
+templ EntityList(albums []sqlc.Album) {
+	<section class="list-section">
+		<div class="list-header">
+			<h2>Colección de Álbumes</h2>
+		</div>
+		<div id="albums-container" class="albums-grid">
+			if len(albums) == 0 {
+				<div class="empty-state">
+					<p>Todavía no hay álbumes cargados en la base de datos.</p>
+					<p>¡Usá el formulario de arriba para crear el primero!</p>
+				</div>
+			} else {
+				for _, album := range albums {
+					<article class="album-card">
+						<div>
+							if initialCoverURL(album) != "" {
+								<div
+									class="cover-wrapper"
+									data-portada={ album.Portada.String }
+									data-contraportada={ album.Contraportada.String }
+									data-showing={ initialCoverShowing(album) }
+								>
+									<img
+										src={ initialCoverURL(album) }
+										alt={ fmt.Sprintf("%s de %s", initialCoverLabel(album), album.Titulo) }
+										class="album-cover"
+										onerror="this.closest('.cover-wrapper').style.display='none'"
+									/>
+									<span class="cover-label">{ initialCoverLabel(album) }</span>
+									if hasBothCovers(album) {
+										<button type="button" class="cover-arrow cover-arrow-left" title="Cambiar entre Portada y Contraportada" aria-label="Imagen anterior">&#10094;</button>
+										<button type="button" class="cover-arrow cover-arrow-right" title="Cambiar entre Portada y Contraportada" aria-label="Siguiente imagen">&#10095;</button>
+									}
+								</div>
+							}
+							<div class="album-body">
+								<div class="album-header">
+									<h3 class="album-title">{ album.Titulo }</h3>
+									<span class="album-badge">{ album.Genero }</span>
+								</div>
+								<p class="album-band">{ album.Banda }</p>
+								if album.Productor.Valid || album.ListaArtistas.Valid || album.DuracionMinutos.Valid || album.FechaSalida.Valid {
+									<div class="album-details">
+										if album.Productor.Valid && album.Productor.String != "" {
+											<span><strong>Productor:</strong> { album.Productor.String }</span>
+										}
+										if album.ListaArtistas.Valid && album.ListaArtistas.String != "" {
+											<span><strong>Artistas:</strong> { album.ListaArtistas.String }</span>
+										}
+										if album.DuracionMinutos.Valid && album.DuracionMinutos.Int32 > 0 {
+											<span><strong>Duración:</strong> { fmt.Sprintf("%d min", album.DuracionMinutos.Int32) }</span>
+										}
+										if album.FechaSalida.Valid {
+											<span><strong>Lanzamiento:</strong> { album.FechaSalida.Time.Format("2006-01-02") }</span>
+										}
+									</div>
+								}
+								if album.Observacion.Valid && album.Observacion.String != "" {
+									<p class="album-observation">"{ album.Observacion.String }"</p>
+								}
+								if album.LinkEscucha.Valid && album.LinkEscucha.String != "" {
+									<a href={ templ.SafeURL(album.LinkEscucha.String) } target="_blank" rel="noopener noreferrer" class="album-link">▶ Escuchar álbum</a>
+								}
+							</div>
+						</div>
+						<div class="album-footer">
+							<span class="album-id">{ fmt.Sprintf("#%d", album.ID) }</span>
+							<div class="album-actions">
+								<form method="POST" action="/albums/delete" class="delete-form">
+									<input type="hidden" name="id" value={ fmt.Sprint(album.ID) }/>
+									<button type="submit" class="btn btn-delete">Eliminar</button>
+								</form>
+							</div>
+						</div>
+					</article>
+				}
+			}
+		</div>
+		@coverSwitchScript()
+	</section>
+}
+
+templ coverSwitchScript() {
+	<script>
+		document.addEventListener('DOMContentLoaded', () => {
+			const albumsContainer = document.getElementById('albums-container');
+			if (!albumsContainer) return;
+
+			albumsContainer.addEventListener('click', (event) => {
+				const arrowBtn = event.target.closest('.cover-arrow');
+				if (!arrowBtn) return;
+
+				const wrapper = arrowBtn.closest('.cover-wrapper');
+				if (!wrapper || wrapper.dataset.animating === 'true') return;
+
+				const img = wrapper.querySelector('.album-cover');
+				const label = wrapper.querySelector('.cover-label');
+				const currentShowing = wrapper.dataset.showing;
+				const isNext = arrowBtn.classList.contains('cover-arrow-right');
+				const slideOffset = isNext ? -28 : 28;
+
+				const nextShowing = currentShowing === 'portada' ? 'contraportada' : 'portada';
+				const nextSrc = nextShowing === 'contraportada'
+					? wrapper.dataset.contraportada
+					: wrapper.dataset.portada;
+				const nextLabel = nextShowing === 'contraportada' ? 'Contraportada' : 'Portada';
+
+				wrapper.dataset.animating = 'true';
+
+				const outAnim = img.animate(
+					[
+						{ opacity: 1, transform: 'translateX(0) scale(1)' },
+						{ opacity: 0, transform: `translateX(${slideOffset}px) scale(0.95)` }
+					],
+					{ duration: 180, easing: 'ease-in', fill: 'forwards' }
+				);
+
+				outAnim.onfinish = () => {
+					img.src = nextSrc;
+					wrapper.dataset.showing = nextShowing;
+					if (label) label.textContent = nextLabel;
+
+					const inAnim = img.animate(
+						[
+							{ opacity: 0, transform: `translateX(${-slideOffset}px) scale(0.95)` },
+							{ opacity: 1, transform: 'translateX(0) scale(1)' }
+						],
+						{ duration: 220, easing: 'ease-out', fill: 'forwards' }
+					);
+
+					inAnim.onfinish = () => {
+						wrapper.dataset.animating = 'false';
+					};
+				};
+			});
+		});
+	</script>
+}
+
