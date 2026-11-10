@@ -14,7 +14,6 @@ import (
 )
 
 func main() {
-	// 1. Establecer y Gestionar la Conexión
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "localhost"
@@ -27,20 +26,16 @@ func main() {
 	}
 	defer db.Close()
 
-	// 2. Verificar que la base de datos responde correctamente
 	if err := db.Ping(); err != nil {
 		log.Fatal("Error contactando a la base de datos: ", err)
 	}
 
-	// 3. Configurar el pool de conexiones para un acceso eficiente a la base de datos
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(25)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
-	// 4. Crear instancia del repositorio generado por sqlc
 	repo := sqlc.New(db)
 
-	// 5. Inyectar el repositorio en el servidor y registrar rutas SSR
 	server := handlers.NewServer(repo)
 
 	fs := http.FileServer(http.Dir("static"))
@@ -50,7 +45,6 @@ func main() {
 	http.HandleFunc("/albums", server.CreateAlbumHandler)
 	http.HandleFunc("/albums/delete", server.DeleteAlbumHandler)
 
-	// 6. Iniciar el servidor HTTP
 	fmt.Println("Servidor SSR escuchando en http://localhost:8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal("Error en el servidor HTTP: ", err)
