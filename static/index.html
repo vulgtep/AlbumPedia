@@ -107,7 +107,6 @@
 
     <script>// static/app.js
 
-// Si se abre como archivo local (file://), apunta a localhost:8080; si lo sirve Go, usa ruta relativa
 const API_BASE = window.location.protocol === 'file:' ? 'http://localhost:8080' : '';
 const ALBUMS_URL = `${API_BASE}/albums`;
 
@@ -134,7 +133,7 @@ const inputContraportada = document.getElementById('input-contraportada');
 const inputLink = document.getElementById('input-link');
 const inputObservacion = document.getElementById('input-observacion');
 
-// Helpers para serializar y deserializar tipos sql.Null* de sqlc en Go
+// Helpers
 function toNullString(value) {
     const trimmed = value.trim();
     return {
@@ -181,7 +180,7 @@ function fromNullTime(nullTime) {
     return '';
 }
 
-// Mostrar notificación temporal
+
 function showMessage(text, type = 'success') {
     statusMessage.textContent = text;
     statusMessage.className = `status-message ${type}`;
@@ -192,17 +191,14 @@ function showMessage(text, type = 'success') {
     }, 4000);
 }
 
-// Escapar HTML para evitar inyección
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// Estado local de álbumes cargados
 let currentAlbums = [];
 
-// 1. Obtener y listar todos los álbumes (GET /albums)
 async function fetchAlbums() {
     try {
         albumsContainer.innerHTML = '<p class="loading-text">Cargando álbumes...</p>';
@@ -225,7 +221,6 @@ async function fetchAlbums() {
     }
 }
 
-// Renderizar las tarjetas de álbumes en el DOM
 function renderAlbums(albums) {
     if (!albums || albums.length === 0) {
         albumsContainer.innerHTML = `
@@ -327,7 +322,6 @@ albumsContainer.addEventListener('click', (event) => {
 
         wrapper.dataset.animating = 'true';
 
-        // Fase 1: Animación de salida con Web Animations API (JS nativo)
         const outAnim = img.animate(
             [
                 { opacity: 1, transform: 'translateX(0) scale(1)' },
@@ -341,7 +335,6 @@ albumsContainer.addEventListener('click', (event) => {
             wrapper.dataset.showing = nextShowing;
             if (label) label.textContent = nextLabel;
 
-            // Fase 2: Animación de entrada desde el lado opuesto
             const inAnim = img.animate(
                 [
                     { opacity: 0, transform: `translateX(${-slideOffset}px) scale(0.95)` },
@@ -375,7 +368,6 @@ albumsContainer.addEventListener('click', (event) => {
     }
 });
 
-// 2. Crear o Actualizar un álbum (POST /albums o PUT /albums/{id})
 albumForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -436,7 +428,6 @@ albumForm.addEventListener('submit', async (event) => {
     }
 });
 
-// 3. Cargar datos de un álbum en el formulario para editarlo
 function loadAlbumIntoForm(album) {
     albumIdInput.value = album.id;
     inputTitulo.value = album.titulo || '';
@@ -459,7 +450,6 @@ function loadAlbumIntoForm(album) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Limpiar el formulario y volver a modo creación
 function resetForm() {
     albumForm.reset();
     albumIdInput.value = '';
@@ -468,7 +458,6 @@ function resetForm() {
     btnCancel.classList.add('hidden');
 }
 
-// 4. Eliminar un álbum (DELETE /albums/{id})
 async function deleteAlbum(id, titulo) {
     const confirmacion = window.confirm(`¿Estás seguro de que querés eliminar el álbum "${titulo}"?`);
     if (!confirmacion) return;
@@ -492,11 +481,9 @@ async function deleteAlbum(id, titulo) {
     }
 }
 
-// Eventos adicionales
 btnCancel.addEventListener('click', resetForm);
 btnRefresh.addEventListener('click', fetchAlbums);
 
-// Inicializar al cargar la página
 document.addEventListener('DOMContentLoaded', fetchAlbums);
 
 </script>
