@@ -440,3 +440,336 @@ body {
     border-radius: 10px;
     border: 1px dashed #CBD2D9;
 }
+
+/* Barra superior, Buscador de Usuarios y Perfiles */
+.navbar {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.brand-link {
+    text-decoration: none;
+}
+
+.brand-link #titulo {
+    margin-bottom: 0;
+    font-size: 2.5rem;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 380px;
+    min-width: 240px;
+}
+
+.user-search-input {
+    width: 100%;
+    margin-bottom: 0 !important;
+    padding: 9px 14px !important;
+    border-radius: 999px !important;
+    border: 1px solid #CBD2D9 !important;
+    background-color: #F9FAFC !important;
+    font-size: 0.92rem !important;
+}
+
+.user-search-input:focus {
+    border-color: #4169E1 !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.15) !important;
+}
+
+.search-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+.search-results-list {
+    background: #ffffff;
+    border: 1px solid #E1E4E8;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+}
+
+.search-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    text-decoration: none;
+    color: #1F2430;
+    border-bottom: 1px solid #F0F2F5;
+    font-size: 0.92rem;
+    transition: background-color 0.15s;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: #EEF2FF;
+    color: #4169E1;
+}
+
+.search-result-action {
+    font-size: 0.8rem;
+    color: #4169E1;
+    font-weight: 600;
+}
+
+.search-result-empty {
+    padding: 12px 16px;
+    color: #6B7280;
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-pill {
+    background-color: #EEF2FF;
+    color: #4169E1;
+    font-weight: 600;
+    font-size: 0.92rem;
+    padding: 7px 14px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.user-pill:hover {
+    background-color: #DCE4FF;
+}
+
+.logout-form {
+    margin: 0;
+}
+
+.btn-sm {
+    padding: 6px 14px !important;
+    font-size: 0.85rem !important;
+    margin-bottom: 0 !important;
+}
+
+/* Tarjetas de Login y Registro */
+.auth-card {
+    max-width: 440px;
+    width: 100%;
+    margin: 10px auto;
+}
+
+.auth-card h2 {
+    margin-bottom: 6px;
+    color: #1F2430;
+}
+
+.auth-subtitle {
+    color: #6B7280;
+    font-size: 0.92rem;
+    margin-bottom: 20px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.full-btn {
+    width: 100%;
+}
+
+.auth-footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 0.92rem;
+    color: #4B5563;
+}
+
+.auth-footer a {
+    color: #4169E1;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Banner de Perfil Ajeno */
+.profile-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: linear-gradient(135deg, #ffffff 0%, #EEF2FF 100%);
+    border-left: 4px solid #4169E1;
+}
+
+.profile-banner-info h2 {
+    margin-bottom: 4px;
+    font-size: 1.45rem;
+}
+
+.profile-banner-info p {
+    margin-bottom: 0;
+    color: #4B5563;
+    font-size: 0.95rem;
+}
+
+/* Ventana Emergente Flotante (Estilo Popup con Solapa y Botón Cerrar Inferior) */
+.popup-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(20, 24, 33, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 9999;
+    animation: modalFadeIn 0.16s ease-out;
+}
+
+.popup-wrapper {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.2s ease-out;
+}
+
+.popup-tab {
+    align-self: flex-start;
+    background-color: #1DA1F2;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 6px 6px 0 0;
+    letter-spacing: 0.3px;
+    box-shadow: 0 -2px 8px rgba(29, 161, 242, 0.25);
+}
+
+.popup-box {
+    background-color: #ffffff;
+    border: 2px solid #1DA1F2;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.32);
+    max-height: 78vh;
+    overflow-y: auto;
+}
+
+.popup-form {
+    margin: 0;
+}
+
+.popup-fields {
+    padding: 26px 42px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.popup-fields .form-group label {
+    font-size: 0.88rem;
+    color: #4A5568;
+    font-weight: 600;
+}
+
+.popup-fields .form-group input,
+.popup-fields .form-group textarea {
+    margin-bottom: 0 !important;
+    padding: 9px 12px !important;
+    border: 1.5px solid #718096 !important;
+    border-radius: 4px !important;
+    background-color: #ffffff !important;
+    font-size: 0.92rem !important;
+}
+
+.popup-fields .form-group input:focus,
+.popup-fields .form-group textarea:focus {
+    border-color: #1DA1F2 !important;
+    box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.18) !important;
+}
+
+.popup-two-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px 16px;
+}
+
+.popup-submit-row {
+    padding: 18px 42px 24px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: center;
+    background-color: #FAFCFF;
+}
+
+.popup-submit-btn {
+    background-color: #4169E1;
+    color: #ffffff;
+    border: none;
+    min-width: 190px;
+    padding: 11px 28px;
+    font-size: 0.96rem;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.popup-submit-btn:hover {
+    background-color: #3154B6;
+}
+
+.popup-close-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.popup-close-pill {
+    background-color: #1DA1F2;
+    color: #ffffff;
+    border: none;
+    padding: 7px 18px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(29, 161, 242, 0.35);
+    transition: background-color 0.15s;
+}
+
+.popup-close-pill:hover {
+    background-color: #0d8ddb;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+    from { opacity: 0; transform: translateY(-14px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+

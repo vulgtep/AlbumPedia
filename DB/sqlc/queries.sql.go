@@ -12,6 +12,7 @@ import (
 
 const createAlbum = `-- name: CreateAlbum :one
 INSERT INTO albums (
+    user_id,
     titulo,
     genero,
     banda,
@@ -24,12 +25,13 @@ INSERT INTO albums (
     link_escucha,
     observacion
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 )
-RETURNING id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
+RETURNING id, user_id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
 `
 
 type CreateAlbumParams struct {
+	UserID          int32          `json:"user_id"`
 	Titulo          string         `json:"titulo"`
 	Genero          string         `json:"genero"`
 	Banda           string         `json:"banda"`
@@ -45,6 +47,7 @@ type CreateAlbumParams struct {
 
 func (q *Queries) CreateAlbum(ctx context.Context, arg CreateAlbumParams) (Album, error) {
 	row := q.db.QueryRowContext(ctx, createAlbum,
+		arg.UserID,
 		arg.Titulo,
 		arg.Genero,
 		arg.Banda,
@@ -60,6 +63,7 @@ func (q *Queries) CreateAlbum(ctx context.Context, arg CreateAlbumParams) (Album
 	var i Album
 	err := row.Scan(
 		&i.ID,
+		&i.UserID,
 		&i.Titulo,
 		&i.Genero,
 		&i.Banda,
@@ -71,6 +75,33 @@ func (q *Queries) CreateAlbum(ctx context.Context, arg CreateAlbumParams) (Album
 		&i.FechaSalida,
 		&i.LinkEscucha,
 		&i.Observacion,
+	)
+	return i, err
+}
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (
+    username,
+    password_hash
+) VALUES (
+    $1, $2
+)
+RETURNING id, username, password_hash, created_at
+`
+
+type CreateUserParams struct {
+	Username     string `json:"username"`
+	PasswordHash string `json:"password_hash"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.PasswordHash)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -85,8 +116,23 @@ func (q *Queries) DeleteAlbum(ctx context.Context, id int32) error {
 	return err
 }
 
+const deleteAlbumByOwner = `-- name: DeleteAlbumByOwner :exec
+DELETE FROM albums
+WHERE id = $1 AND user_id = $2
+`
+
+type DeleteAlbumByOwnerParams struct {
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
+}
+
+func (q *Queries) DeleteAlbumByOwner(ctx context.Context, arg DeleteAlbumByOwnerParams) error {
+	_, err := q.db.ExecContext(ctx, deleteAlbumByOwner, arg.ID, arg.UserID)
+	return err
+}
+
 const getAlbum = `-- name: GetAlbum :one
-SELECT id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
+SELECT id, user_id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
 FROM albums
 WHERE id = $1
 `
@@ -96,6 +142,7 @@ func (q *Queries) GetAlbum(ctx context.Context, id int32) (Album, error) {
 	var i Album
 	err := row.Scan(
 		&i.ID,
+		&i.UserID,
 		&i.Titulo,
 		&i.Genero,
 		&i.Banda,
@@ -111,8 +158,76 @@ func (q *Queries) GetAlbum(ctx context.Context, id int32) (Album, error) {
 	return i, err
 }
 
+const getAlbumByOwner = `-- name: GetAlbumByOwner :one
+SELECT id, user_id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
+FROM albums
+WHERE id = $1 AND user_id = $2
+`
+
+type GetAlbumByOwnerParams struct {
+	ID     int32 `json:"id"`
+	UserID int32 `json:"user_id"`
+}
+
+func (q *Queries) GetAlbumByOwner(ctx context.Context, arg GetAlbumByOwnerParams) (Album, error) {
+	row := q.db.QueryRowContext(ctx, getAlbumByOwner, arg.ID, arg.UserID)
+	var i Album
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Titulo,
+		&i.Genero,
+		&i.Banda,
+		&i.Productor,
+		&i.ListaArtistas,
+		&i.Portada,
+		&i.Contraportada,
+		&i.DuracionMinutos,
+		&i.FechaSalida,
+		&i.LinkEscucha,
+		&i.Observacion,
+	)
+	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, password_hash, created_at
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int32) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUserByUsername = `-- name: GetUserByUsername :one
+SELECT id, username, password_hash, created_at
+FROM users
+WHERE LOWER(username) = LOWER($1)
+`
+
+func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByUsername, lower)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PasswordHash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listAlbums = `-- name: ListAlbums :many
-SELECT id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
+SELECT id, user_id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
 FROM albums
 ORDER BY id
 `
@@ -128,6 +243,7 @@ func (q *Queries) ListAlbums(ctx context.Context) ([]Album, error) {
 		var i Album
 		if err := rows.Scan(
 			&i.ID,
+			&i.UserID,
 			&i.Titulo,
 			&i.Genero,
 			&i.Banda,
@@ -140,6 +256,86 @@ func (q *Queries) ListAlbums(ctx context.Context) ([]Album, error) {
 			&i.LinkEscucha,
 			&i.Observacion,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAlbumsByUser = `-- name: ListAlbumsByUser :many
+SELECT id, user_id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
+FROM albums
+WHERE user_id = $1
+ORDER BY id
+`
+
+func (q *Queries) ListAlbumsByUser(ctx context.Context, userID int32) ([]Album, error) {
+	rows, err := q.db.QueryContext(ctx, listAlbumsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Album
+	for rows.Next() {
+		var i Album
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Titulo,
+			&i.Genero,
+			&i.Banda,
+			&i.Productor,
+			&i.ListaArtistas,
+			&i.Portada,
+			&i.Contraportada,
+			&i.DuracionMinutos,
+			&i.FechaSalida,
+			&i.LinkEscucha,
+			&i.Observacion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchUsers = `-- name: SearchUsers :many
+SELECT id, username
+FROM users
+WHERE username ILIKE '%' || $1 || '%'
+ORDER BY username
+LIMIT 8
+`
+
+type SearchUsersRow struct {
+	ID       int32  `json:"id"`
+	Username string `json:"username"`
+}
+
+func (q *Queries) SearchUsers(ctx context.Context, dollar_1 sql.NullString) ([]SearchUsersRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchUsers, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchUsersRow
+	for rows.Next() {
+		var i SearchUsersRow
+		if err := rows.Scan(&i.ID, &i.Username); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -168,7 +364,7 @@ SET
     link_escucha = $11,
     observacion = $12
 WHERE id = $1
-RETURNING id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
+RETURNING id, user_id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
 `
 
 type UpdateAlbumParams struct {
@@ -204,6 +400,76 @@ func (q *Queries) UpdateAlbum(ctx context.Context, arg UpdateAlbumParams) (Album
 	var i Album
 	err := row.Scan(
 		&i.ID,
+		&i.UserID,
+		&i.Titulo,
+		&i.Genero,
+		&i.Banda,
+		&i.Productor,
+		&i.ListaArtistas,
+		&i.Portada,
+		&i.Contraportada,
+		&i.DuracionMinutos,
+		&i.FechaSalida,
+		&i.LinkEscucha,
+		&i.Observacion,
+	)
+	return i, err
+}
+
+const updateAlbumByOwner = `-- name: UpdateAlbumByOwner :one
+UPDATE albums
+SET
+    titulo = $3,
+    genero = $4,
+    banda = $5,
+    productor = $6,
+    lista_artistas = $7,
+    portada = $8,
+    contraportada = $9,
+    duracion_minutos = $10,
+    fecha_salida = $11,
+    link_escucha = $12,
+    observacion = $13
+WHERE id = $1 AND user_id = $2
+RETURNING id, user_id, titulo, genero, banda, productor, lista_artistas, portada, contraportada, duracion_minutos, fecha_salida, link_escucha, observacion
+`
+
+type UpdateAlbumByOwnerParams struct {
+	ID              int32          `json:"id"`
+	UserID          int32          `json:"user_id"`
+	Titulo          string         `json:"titulo"`
+	Genero          string         `json:"genero"`
+	Banda           string         `json:"banda"`
+	Productor       sql.NullString `json:"productor"`
+	ListaArtistas   sql.NullString `json:"lista_artistas"`
+	Portada         sql.NullString `json:"portada"`
+	Contraportada   sql.NullString `json:"contraportada"`
+	DuracionMinutos sql.NullInt32  `json:"duracion_minutos"`
+	FechaSalida     sql.NullTime   `json:"fecha_salida"`
+	LinkEscucha     sql.NullString `json:"link_escucha"`
+	Observacion     sql.NullString `json:"observacion"`
+}
+
+func (q *Queries) UpdateAlbumByOwner(ctx context.Context, arg UpdateAlbumByOwnerParams) (Album, error) {
+	row := q.db.QueryRowContext(ctx, updateAlbumByOwner,
+		arg.ID,
+		arg.UserID,
+		arg.Titulo,
+		arg.Genero,
+		arg.Banda,
+		arg.Productor,
+		arg.ListaArtistas,
+		arg.Portada,
+		arg.Contraportada,
+		arg.DuracionMinutos,
+		arg.FechaSalida,
+		arg.LinkEscucha,
+		arg.Observacion,
+	)
+	var i Album
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
 		&i.Titulo,
 		&i.Genero,
 		&i.Banda,

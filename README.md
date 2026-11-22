@@ -1,8 +1,4 @@
-# AlbumPedia — Trabajo Práctico Integrador (TP6: Interactividad Tipo SPA con HTMX y `templ`)
-
-Aplicación web en **Go** para gestionar y catalogar álbumes de música con persistencia en **PostgreSQL** (`sqlc`), orquestación mediante **Docker Compose**, renderizado en el servidor (**SSR**) con **[`templ`](https://templ.guide/)** e interactividad dinámica sin recargas de página utilizando **[HTMX](https://htmx.org/)**.
-
----
+# TP6: Interactividad Tipo SPA con HTMX y `templ`
 
 ## Inicio Rápido e Instalación (TP6)
 
@@ -38,8 +34,7 @@ Variables utilizadas en `.env`:
 | `DB_PASSWORD` | Contraseña de conexión de la aplicación Go | `tu_password_seguro` |
 | `DB_NAME` | Nombre de la base de datos a utilizar | `albumpedia` |
 | `APP_PORT` | Puerto HTTP del servidor web | `8080` |
-
-> **Nota de seguridad:** El archivo `.env` está excluido del control de versiones mediante `.gitignore` para evitar exponer credenciales sensibles en el repositorio.
+| `SESSION_SECRET` | Clave secreta para firmar las cookies de sesión | `tu_secreto_aleatorio` |
 
 ### 3. Ejecución automática (con un solo comando)
 El comando `make start` carga las variables de `.env`, levanta el contenedor de PostgreSQL, espera a que acepte conexiones, genera el código de `sqlc` y `templ`, e inicia el servidor:
@@ -100,48 +95,32 @@ En el TP6 se evolucionó la aplicación renderizada en el servidor (`templ` + Go
 
 | Método | Ruta | Handler | Respuesta del Servidor / Efecto en HTMX |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/` | `HomeHandler` | Renderiza la página inicial completa (`views.HomePage(albums)`). |
-| `POST` | `/albums` | `CreateAlbumHandler` | Crea el álbum y devuelve el fragmento parcial `views.EntityList(albums)` que reemplaza `#albums-list`. |
-| `DELETE` | `/albums/{id}` | `DeleteAlbumHandler` | Elimina el álbum en BD y devuelve `200 OK` vacío, eliminando el `closest article` del DOM. |
+| `GET` | `/` | `HomeHandler` | Renderiza el perfil del usuario conectado con el formulario y sus álbumes (`views.HomePage`). |
+| `GET / POST` | `/login` | `LoginHandler` | Pantalla de inicio de sesión y validación de credenciales. |
+| `GET / POST` | `/register` | `RegisterHandler` | Pantalla de registro para crear una cuenta nueva. |
+| `POST` | `/logout` | `LogoutHandler` | Cierra la sesión actual. |
+| `GET` | `/users/search` | `SearchUsersHandler` | Busca usuarios por nombre y devuelve la lista desplegable en vivo con HTMX. |
+| `GET` | `/u/{username}` | `UserProfileHandler` | Muestra el perfil y los álbumes de otro usuario en modo solo lectura. |
+| `POST` | `/albums` | `CreateAlbumHandler` | Crea el álbum en la cuenta actual y devuelve el fragmento `views.EntityList` que actualiza `#albums-list`. |
+| `GET` | `/albums/{id}/edit` | `DeleteAlbumHandler` | Abre la ventana emergente flotante con los datos del álbum para editarlo (solo si sos el dueño). |
+| `PUT` | `/albums/{id}` | `DeleteAlbumHandler` | Guarda los cambios del álbum editado y actualiza su tarjeta en la vista. |
+| `DELETE` | `/albums/{id}` | `DeleteAlbumHandler` | Elimina el álbum en BD (solo si sos el dueño) y devuelve `200 OK` vacío, quitando la tarjeta del DOM. |
 
 ---
 
-## Modelo de Datos: Tabla `albums`
+## Cuentas de Usuario, Buscador y Edición de Álbumes
 
-La persistencia del proyecto se apoya en la tabla `albums` dentro de PostgreSQL (`DB/schema/schema.sql`):
+Se sumó un sistema simple de cuentas para que cada usuario tenga su propio perfil y colección de álbumes:
 
-| Columna | Tipo de Dato | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | SERIAL | PRIMARY KEY | Identificador único autoincremental del álbum. |
-| `titulo` | VARCHAR(150) | NOT NULL | Título o nombre del álbum. |
-| `genero` | VARCHAR(100) | NOT NULL | Género musical principal del álbum. |
-| `banda` | VARCHAR(150) | NOT NULL | Nombre de la banda o artista creador. |
-| `productor` | VARCHAR(150) | Permite NULL | Nombre del productor o productores a cargo. |
-| `lista_artistas` | VARCHAR(150) | Permite NULL | Listado de integrantes o artistas invitados. |
-| `portada` | VARCHAR(255) | Permite NULL | Enlace o ruta de archivo para la imagen frontal. |
-| `contraportada` | VARCHAR(255) | Permite NULL | Enlace o ruta de archivo para la imagen trasera. |
-| `duracion_minutos` | INTEGER | Permite NULL | Duración total del álbum expresada en minutos. |
-| `fecha_salida` | DATE | Permite NULL | Fecha oficial de publicación o lanzamiento. |
-| `link_escucha` | VARCHAR(500) | Permite NULL | URL directa para reproducir el álbum (Spotify, YouTube, etc.). |
-| `observacion` | VARCHAR(1000)| Permite NULL | Campo de texto amplio para reseñas u opiniones personales. |
+* **Registro y Login simples (`/register` y `/login`):**
+  Podés crear una cuenta ingresando únicamente un **nombre de usuario** y una **contraseña**.
+  > **Nota sobre la contraseña:** Los requisitos de contraseña se dejaron bien simples (mínimo 4 caracteres, sin exigir símbolos ni mayúsculas complejas) porque el objetivo es poder probar la aplicación cómodamente en un entorno de práctica. De todas formas, las contraseñas nunca se guardan en texto plano en la base de datos, sino hasheadas de forma segura (`PBKDF2-SHA256`) y la sesión se maneja con una cookie firmada.
 
----
+* **Tu perfil vs. buscar otras cuentas (`/u/{username}`):**
+  * Cuando entrás con tu cuenta a la página principal (`/`), ves el formulario para cargar nuevos álbumes y tu propia colección.
+  * Arriba en la barra de navegación tenés un **buscador de usuarios**. Al escribir un nombre, te muestra los usuarios encontrados en tiempo real y podés entrar a ver los álbumes que cargó esa otra cuenta.
+  * Cuando estás viendo el perfil de otro usuario, la página entra en **modo lectura**: se oculta el formulario de carga y tampoco aparecen los botones de editar ni eliminar, para que nadie pueda modificar la colección de otra persona.
 
-## Ejecución de Tests de Persistencia
-
-El proyecto incluye pruebas automatizadas con el paquete `testing` de Go (`DB/queries_test.go`). Para ejecutarlas:
-
-```bash
-make make-test
-```
-
-Este comando automatiza la generación de `sqlc` y `templ`, la compilación, el levantado limpio de PostgreSQL en Docker, la ejecución de `go test -v ./...` y la limpieza final de contenedores y volúmenes.
-
----
-
-## Historial de Etapas Anteriores (TP1 – TP5)
-
-* **TP1 y TP2 (Modelo de Datos y Persistencia con `sqlc`):** Diseño del esquema relacional en PostgreSQL (`DB/schema/schema.sql`), consultas tipadas con `sqlc` (`DB/queries/query.sql`) y suite de pruebas unitarias de base de datos (`DB/queries_test.go`).
-* **TP3 (Docker Compose y API REST):** Orquestación de contenedores con `docker-compose.yml`, documentación OpenAPI 3.0 (`Openapi.yaml`) y pruebas HTTP automatizadas con `hurl` (`request.hurl`).
-* **TP4 (Frontend Cliente HTML/CSS/JS):** Interfaz estática con CSS Grid/Flexbox (`static/styles.css`) y visor interactivo con transición animada entre portada y contraportada.
-* **TP5 (Server-Side Rendering con `templ`):** Refactorización de las vistas a componentes `.templ` (`views/layout.templ`, `views/entity_form.templ`, `views/entity_list.templ`) renderizados directamente por el servidor Go con el patrón Post/Redirect/Get (PRG).
+* **Modificación y borrado solo por el dueño:**
+  * En tus propios álbumes tenés el botón **Editar**, que abre una **ventana emergente flotante** sobre la página con todos los datos cargados para que puedas modificarlos y guardarlos sin recargar la pantalla.
+  * Tanto la edición (`PUT /albums/{id}`) como el borrado (`DELETE /albums/{id}`) validan en la base de datos que el álbum pertenezca al usuario logueado.

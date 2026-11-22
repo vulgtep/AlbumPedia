@@ -8,9 +8,12 @@ package views
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "albumPedia.com/albumPedia/DB/sqlc"
+import (
+	"albumPedia.com/albumPedia/DB/sqlc"
+	"fmt"
+)
 
-func Layout(title string) templ.Component {
+func Layout(title string, currentUser *sqlc.User) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -38,13 +41,36 @@ func Layout(title string) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 11, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 14, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css\"><link rel=\"stylesheet\" type=\"text/css\" href=\"/static/styles.css\"><script src=\"https://unpkg.com/htmx.org@2.0.4\"></script></head><body><header class=\"header\"><h1 id=\"titulo\">Album<span class=\"resaltar\">pedia</span></h1><p id=\"texto\">Nuestra intención con esta página es registrar nuestros álbumes de música favoritos. Administrá tu colección agregando, consultando o eliminando discos.</p></header><main class=\"container\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css\"><link rel=\"stylesheet\" type=\"text/css\" href=\"/static/styles.css?v=3\"><script src=\"https://unpkg.com/htmx.org@2.0.4\"></script></head><body><header class=\"header\"><div class=\"navbar\"><a href=\"/\" class=\"brand-link\"><h1 id=\"titulo\">Album<span class=\"resaltar\">pedia</span></h1></a> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if currentUser != nil {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<div class=\"search-box\"><input name=\"q\" class=\"user-search-input\" placeholder=\" Buscar usuario por nombre...\" autocomplete=\"off\" hx-get=\"/users/search\" hx-trigger=\"input changed delay:200ms, search\" hx-target=\"#user-search-results\"><div id=\"user-search-results\" class=\"search-dropdown\"></div></div><div class=\"nav-user\"><a href=\"/\" class=\"user-pill\" title=\"Ir a mi perfil\">👤 ")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("@" + currentUser.Username)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 40, Col: 41}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</a><form method=\"POST\" action=\"/logout\" class=\"logout-form\"><button type=\"submit\" class=\"btn btn-outline btn-sm\">Salir</button></form></div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div><p id=\"texto\">Nuestra intención con esta página es registrar nuestros álbumes de música favoritos. Administrá tu colección o explorá los perfiles de otros usuarios.</p></header><main class=\"container\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -52,7 +78,7 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</main>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</main><div id=\"edit-modal-container\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -60,7 +86,7 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -68,7 +94,7 @@ func Layout(title string) templ.Component {
 	})
 }
 
-func HomePage(albums []sqlc.Album) templ.Component {
+func HomePage(currentUser *sqlc.User, profileUser sqlc.User, albums []sqlc.Album, isOwner bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -84,12 +110,12 @@ func HomePage(albums []sqlc.Album) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Var4 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Var5 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
 			if !templ_7745c5c3_IsBuffer {
@@ -101,21 +127,54 @@ func HomePage(albums []sqlc.Album) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = EntityForm().Render(ctx, templ_7745c5c3_Buffer)
+			if isOwner {
+				templ_7745c5c3_Err = EntityForm().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<section class=\"card profile-banner\"><div class=\"profile-banner-info\"><h2>Colección de <span class=\"resaltar\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var6 string
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("@" + profileUser.Username)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 69, Col: 74}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "</span></h2><p>Estás viendo el perfil público de ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var7 string
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs("@" + profileUser.Username)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/layout.templ`, Line: 70, Col: 72}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, " en modo lectura.</p></div><a href=\"/\" class=\"btn btn-primary\">← Volver a mi colección</a></section>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, " ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = EntityList(albums).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = EntityList(albums, isOwner, profileUser.Username).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = Layout("AlbumPedia - Catálogo de Álbumes").Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Layout(fmt.Sprintf("AlbumPedia - Perfil de @%s", profileUser.Username), currentUser).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -139,12 +198,12 @@ func coverSwitchScript() templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
+		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var8 == nil {
+			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<script>\n\t\tdocument.addEventListener('click', (event) => {\n\t\t\tconst arrowBtn = event.target.closest('.cover-arrow');\n\t\t\tif (!arrowBtn) return;\n\n\t\t\tconst wrapper = arrowBtn.closest('.cover-wrapper');\n\t\t\tif (!wrapper || wrapper.dataset.animating === 'true') return;\n\n\t\t\tconst img = wrapper.querySelector('.album-cover');\n\t\t\tconst label = wrapper.querySelector('.cover-label');\n\t\t\tconst currentShowing = wrapper.dataset.showing;\n\t\t\tconst isNext = arrowBtn.classList.contains('cover-arrow-right');\n\t\t\tconst slideOffset = isNext ? -28 : 28;\n\n\t\t\tconst nextShowing = currentShowing === 'portada' ? 'contraportada' : 'portada';\n\t\t\tconst nextSrc = nextShowing === 'contraportada'\n\t\t\t\t? wrapper.dataset.contraportada\n\t\t\t\t: wrapper.dataset.portada;\n\t\t\tconst nextLabel = nextShowing === 'contraportada' ? 'Contraportada' : 'Portada';\n\n\t\t\twrapper.dataset.animating = 'true';\n\n\t\t\tconst outAnim = img.animate(\n\t\t\t\t[\n\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' },\n\t\t\t\t\t{ opacity: 0, transform: `translateX(${slideOffset}px) scale(0.95)` }\n\t\t\t\t],\n\t\t\t\t{ duration: 180, easing: 'ease-in', fill: 'forwards' }\n\t\t\t);\n\n\t\t\toutAnim.onfinish = () => {\n\t\t\t\timg.src = nextSrc;\n\t\t\t\twrapper.dataset.showing = nextShowing;\n\t\t\t\tif (label) label.textContent = nextLabel;\n\n\t\t\t\tconst inAnim = img.animate(\n\t\t\t\t\t[\n\t\t\t\t\t\t{ opacity: 0, transform: `translateX(${-slideOffset}px) scale(0.95)` },\n\t\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' }\n\t\t\t\t\t],\n\t\t\t\t\t{ duration: 220, easing: 'ease-out', fill: 'forwards' }\n\t\t\t\t);\n\n\t\t\t\tinAnim.onfinish = () => {\n\t\t\t\t\twrapper.dataset.animating = 'false';\n\t\t\t\t};\n\t\t\t};\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<script>\n\t\tdocument.addEventListener('keydown', (event) => {\n\t\t\tif (event.key === 'Escape') {\n\t\t\t\tconst modalContainer = document.getElementById('edit-modal-container');\n\t\t\t\tif (modalContainer) modalContainer.innerHTML = '';\n\t\t\t}\n\t\t});\n\n\t\tdocument.addEventListener('click', (event) => {\n\t\t\t// Cerrar desplegable de búsqueda al hacer clic fuera\n\t\t\tconst searchBox = event.target.closest('.search-box');\n\t\t\tif (!searchBox) {\n\t\t\t\tconst dropdown = document.getElementById('user-search-results');\n\t\t\t\tif (dropdown) dropdown.innerHTML = '';\n\t\t\t}\n\n\t\t\tconst arrowBtn = event.target.closest('.cover-arrow');\n\t\t\tif (!arrowBtn) return;\n\n\t\t\tconst wrapper = arrowBtn.closest('.cover-wrapper');\n\t\t\tif (!wrapper || wrapper.dataset.animating === 'true') return;\n\n\t\t\tconst img = wrapper.querySelector('.album-cover');\n\t\t\tconst label = wrapper.querySelector('.cover-label');\n\t\t\tconst currentShowing = wrapper.dataset.showing;\n\t\t\tconst isNext = arrowBtn.classList.contains('cover-arrow-right');\n\t\t\tconst slideOffset = isNext ? -28 : 28;\n\n\t\t\tconst nextShowing = currentShowing === 'portada' ? 'contraportada' : 'portada';\n\t\t\tconst nextSrc = nextShowing === 'contraportada'\n\t\t\t\t? wrapper.dataset.contraportada\n\t\t\t\t: wrapper.dataset.portada;\n\t\t\tconst nextLabel = nextShowing === 'contraportada' ? 'Contraportada' : 'Portada';\n\n\t\t\twrapper.dataset.animating = 'true';\n\n\t\t\tconst outAnim = img.animate(\n\t\t\t\t[\n\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' },\n\t\t\t\t\t{ opacity: 0, transform: `translateX(${slideOffset}px) scale(0.95)` }\n\t\t\t\t],\n\t\t\t\t{ duration: 180, easing: 'ease-in', fill: 'forwards' }\n\t\t\t);\n\n\t\t\toutAnim.onfinish = () => {\n\t\t\t\timg.src = nextSrc;\n\t\t\t\twrapper.dataset.showing = nextShowing;\n\t\t\t\tif (label) label.textContent = nextLabel;\n\n\t\t\t\tconst inAnim = img.animate(\n\t\t\t\t\t[\n\t\t\t\t\t\t{ opacity: 0, transform: `translateX(${-slideOffset}px) scale(0.95)` },\n\t\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' }\n\t\t\t\t\t],\n\t\t\t\t\t{ duration: 220, easing: 'ease-out', fill: 'forwards' }\n\t\t\t\t);\n\n\t\t\t\tinAnim.onfinish = () => {\n\t\t\t\t\twrapper.dataset.animating = 'false';\n\t\t\t\t};\n\t\t\t};\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

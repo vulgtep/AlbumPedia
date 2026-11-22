@@ -35,11 +35,26 @@ func setupTestDB(t *testing.T) (*sqlc.Queries, *sql.DB) {
 	return sqlc.New(db), db
 }
 
+func createTestUser(t *testing.T, queries *sqlc.Queries) sqlc.User {
+	ctx := context.Background()
+	username := fmt.Sprintf("user_%d", time.Now().UnixNano())
+	user, err := queries.CreateUser(ctx, sqlc.CreateUserParams{
+		Username:     username,
+		PasswordHash: "salt$hash",
+	})
+	if err != nil {
+		t.Fatalf("Error creando usuario auxiliar: %v", err)
+	}
+	return user
+}
+
 // createRandomAlbum es una función auxiliar que inserta un álbum genérico.
 // Esto nos evita repetir código en los tests que necesitan que ya exista un álbum (como Get, Update o Delete).
 func createRandomAlbum(t *testing.T, queries *sqlc.Queries) sqlc.Album {
 	ctx := context.Background()
+	user := createTestUser(t, queries)
 	arg := sqlc.CreateAlbumParams{
+		UserID:          user.ID,
 		Titulo:          "Álbum Genérico para Tests",
 		Genero:          "Rock Alternativo",
 		Banda:           "Banda de Prueba",
@@ -65,7 +80,9 @@ func TestCreateAlbum(t *testing.T) {
 	defer db.Close() // Cerramos la conexión al terminar el test
 
 	ctx := context.Background()
+	user := createTestUser(t, queries)
 	arg := sqlc.CreateAlbumParams{
+		UserID:          user.ID,
 		Titulo:          "The Dark Side of the Moon",
 		Genero:          "Progressive Rock",
 		Banda:           "Pink Floyd",

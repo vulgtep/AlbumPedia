@@ -20,7 +20,7 @@ func NewServer(queries *sqlc.Queries) *Server {
 	return &Server{Queries: queries}
 }
 
-// GET / - Obtiene todos los álbumes y renderiza la vista principal con templ
+// GET / - Obtiene los álbumes del usuario autenticado y renderiza su perfil con formulario
 func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -31,21 +31,33 @@ func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	albums, err := s.Queries.ListAlbums(r.Context())
+	currentUser, ok := s.getAuthenticatedUser(r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	albums, err := s.Queries.ListAlbumsByUser(r.Context(), currentUser.ID)
 	if err != nil {
 		http.Error(w, "Error obteniendo álbumes: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := views.HomePage(albums).Render(r.Context(), w); err != nil {
+	if err := views.HomePage(currentUser, *currentUser, albums, true).Render(r.Context(), w); err != nil {
 		http.Error(w, "Error renderizando la página", http.StatusInternalServerError)
 	}
 }
 
-// POST /albums - Crea el álbum en BD y devuelve el fragmento EntityList para HTMX
+// POST /albums - Crea el álbum para el usuario autenticado y devuelve el fragmento EntityList para HTMX
 func (s *Server) CreateAlbumHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	currentUser, ok := s.getAuthenticatedUser(r)
+	if !ok {
+		http.Error(w, "Sesión expirada. Iniciá sesión nuevamente.", http.StatusUnauthorized)
 		return
 	}
 
@@ -64,6 +76,7 @@ func (s *Server) CreateAlbumHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	arg := sqlc.CreateAlbumParams{
+		UserID:          currentUser.ID,
 		Titulo:          titulo,
 		Banda:           banda,
 		Genero:          genero,
@@ -82,37 +95,121 @@ func (s *Server) CreateAlbumHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	albums, err := s.Queries.ListAlbums(r.Context())
+	albums, err := s.Queries.ListAlbumsByUser(r.Context(), currentUser.ID)
 	if err != nil {
 		http.Error(w, "Error obteniendo álbumes: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := views.EntityList(albums).Render(r.Context(), w); err != nil {
+	if err := views.EntityList(albums, true, currentUser.Username).Render(r.Context(), w); err != nil {
 		http.Error(w, "Error renderizando la lista de álbumes", http.StatusInternalServerError)
 	}
 }
 
-// DELETE /albums/{id} - Elimina un álbum por ID y devuelve 200 OK vacío para HTMX
+// Handler para /albums/{id}, /albums/{id}/edit y /albums/{id}/card
+// Verifica siempre que el usuario autenticado sea el dueño del álbum (WHERE id = $1 AND user_id = $2).
 func (s *Server) DeleteAlbumHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	currentUser, ok := s.getAuthenticatedUser(r)
+	if !ok {
+		http.Error(w, "No autorizado", http.StatusUnauthorized)
 		return
 	}
 
-	idStr := strings.TrimSpace(strings.TrimPrefix(r.URL.Path, "/albums/"))
-	id, err := strconv.Atoi(idStr)
+	path := strings.TrimPrefix(r.URL.Path, "/albums/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, "ID de álbum inválido", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(parts[0])
 	if err != nil {
 		http.Error(w, "ID de álbum inválido", http.StatusBadRequest)
 		return
 	}
 
-	if err := s.Queries.DeleteAlbum(r.Context(), int32(id)); err != nil {
-		http.Error(w, "Error eliminando álbum", http.StatusInternalServerError)
+	// 1. GET /albums/{id}/edit -> Devuelve el formulario de edición inline si es el propietario
+	if r.Method == http.MethodGet && len(parts) == 2 && parts[1] == "edit" {
+		album, err := s.Queries.GetAlbumByOwner(r.Context(), sqlc.GetAlbumByOwnerParams{
+			ID:     int32(id),
+			UserID: currentUser.ID,
+		})
+		if err != nil {
+			http.Error(w, "No tenés permiso para editar este álbum", http.StatusForbidden)
+			return
+		}
+		_ = views.AlbumEditCard(album).Render(r.Context(), w)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	// 2. GET /albums/{id}/card -> Cancela la edición y devuelve la tarjeta original del propietario
+	if r.Method == http.MethodGet && len(parts) == 2 && parts[1] == "card" {
+		album, err := s.Queries.GetAlbumByOwner(r.Context(), sqlc.GetAlbumByOwnerParams{
+			ID:     int32(id),
+			UserID: currentUser.ID,
+		})
+		if err != nil {
+			http.Error(w, "No autorizado", http.StatusForbidden)
+			return
+		}
+		_ = views.AlbumCard(album, true).Render(r.Context(), w)
+		return
+	}
+
+	// 3. PUT /albums/{id} -> Actualiza el álbum únicamente si pertenece al usuario autenticado
+	if r.Method == http.MethodPut && len(parts) == 1 {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Error procesando el formulario", http.StatusBadRequest)
+			return
+		}
+
+		titulo := strings.TrimSpace(r.FormValue("titulo"))
+		banda := strings.TrimSpace(r.FormValue("banda"))
+		genero := strings.TrimSpace(r.FormValue("genero"))
+		if titulo == "" || banda == "" || genero == "" {
+			http.Error(w, "Título, banda y género son obligatorios", http.StatusBadRequest)
+			return
+		}
+
+		updatedAlbum, err := s.Queries.UpdateAlbumByOwner(r.Context(), sqlc.UpdateAlbumByOwnerParams{
+			ID:              int32(id),
+			UserID:          currentUser.ID,
+			Titulo:          titulo,
+			Banda:           banda,
+			Genero:          genero,
+			Productor:       parseNullString(r.FormValue("productor")),
+			ListaArtistas:   parseNullString(r.FormValue("lista_artistas")),
+			Portada:         parseNullString(r.FormValue("portada")),
+			Contraportada:   parseNullString(r.FormValue("contraportada")),
+			DuracionMinutos: parseNullInt32(r.FormValue("duracion_minutos")),
+			FechaSalida:     parseNullTime(r.FormValue("fecha_salida")),
+			LinkEscucha:     parseNullString(r.FormValue("link_escucha")),
+			Observacion:     parseNullString(r.FormValue("observacion")),
+		})
+		if err != nil {
+			http.Error(w, "No tenés permiso para modificar este álbum", http.StatusForbidden)
+			return
+		}
+
+		_ = views.AlbumCard(updatedAlbum, true).Render(r.Context(), w)
+		return
+	}
+
+	// 4. DELETE /albums/{id} -> Elimina el álbum únicamente si pertenece al usuario autenticado
+	if r.Method == http.MethodDelete && len(parts) == 1 {
+		err = s.Queries.DeleteAlbumByOwner(r.Context(), sqlc.DeleteAlbumByOwnerParams{
+			ID:     int32(id),
+			UserID: currentUser.ID,
+		})
+		if err != nil {
+			http.Error(w, "Error eliminando álbum", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
 func parseNullString(val string) sql.NullString {

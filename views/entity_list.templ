@@ -34,90 +34,226 @@ func hasBothCovers(album sqlc.Album) bool {
 		album.Contraportada.Valid && album.Contraportada.String != ""
 }
 
-templ EntityList(albums []sqlc.Album) {
+func formatDurationValue(album sqlc.Album) string {
+	if album.DuracionMinutos.Valid && album.DuracionMinutos.Int32 > 0 {
+		return fmt.Sprint(album.DuracionMinutos.Int32)
+	}
+	return ""
+}
+
+func formatDateValue(album sqlc.Album) string {
+	if album.FechaSalida.Valid {
+		return album.FechaSalida.Time.Format("2006-01-02")
+	}
+	return ""
+}
+
+templ EntityList(albums []sqlc.Album, isOwner bool, ownerUsername string) {
 	<section id="albums-list" class="list-section">
 		<div class="list-header">
-			<h2>Colección de Álbumes</h2>
+			if isOwner {
+				<h2>Mi Colección de Álbumes ({ fmt.Sprint(len(albums)) })</h2>
+			} else {
+				<h2>Álbumes de { "@" + ownerUsername } ({ fmt.Sprint(len(albums)) })</h2>
+			}
 		</div>
 		<div id="albums-container" class="albums-grid">
 			if len(albums) == 0 {
 				<div class="empty-state">
-					<p>Todavía no hay álbumes cargados en la base de datos.</p>
-					<p>¡Usá el formulario de arriba para crear el primero!</p>
+					if isOwner {
+						<p>Todavía no tenés álbumes cargados en tu perfil.</p>
+						<p>¡Usá el formulario de arriba para crear el primero!</p>
+					} else {
+						<p>{ "@" + ownerUsername } todavía no cargó álbumes en su perfil.</p>
+					}
 				</div>
 			} else {
 				for _, album := range albums {
-					<article class="album-card">
-						<div>
-							if initialCoverURL(album) != "" {
-								<div
-									class="cover-wrapper"
-									data-portada={ album.Portada.String }
-									data-contraportada={ album.Contraportada.String }
-									data-showing={ initialCoverShowing(album) }
-								>
-									<img
-										src={ initialCoverURL(album) }
-										alt={ fmt.Sprintf("%s de %s", initialCoverLabel(album), album.Titulo) }
-										class="album-cover"
-										onerror="this.closest('.cover-wrapper').style.display='none'"
-									/>
-									<span class="cover-label">{ initialCoverLabel(album) }</span>
-									if hasBothCovers(album) {
-										<button type="button" class="cover-arrow cover-arrow-left" title="Cambiar entre Portada y Contraportada" aria-label="Imagen anterior">&#10094;</button>
-										<button type="button" class="cover-arrow cover-arrow-right" title="Cambiar entre Portada y Contraportada" aria-label="Siguiente imagen">&#10095;</button>
-									}
-								</div>
-							}
-							<div class="album-body">
-								<div class="album-header">
-									<h3 class="album-title">{ album.Titulo }</h3>
-									<span class="album-badge">{ album.Genero }</span>
-								</div>
-								<p class="album-band">{ album.Banda }</p>
-								if album.Productor.Valid || album.ListaArtistas.Valid || album.DuracionMinutos.Valid || album.FechaSalida.Valid {
-									<div class="album-details">
-										if album.Productor.Valid && album.Productor.String != "" {
-											<span><strong>Productor:</strong> { album.Productor.String }</span>
-										}
-										if album.ListaArtistas.Valid && album.ListaArtistas.String != "" {
-											<span><strong>Artistas:</strong> { album.ListaArtistas.String }</span>
-										}
-										if album.DuracionMinutos.Valid && album.DuracionMinutos.Int32 > 0 {
-											<span><strong>Duración:</strong> { fmt.Sprintf("%d min", album.DuracionMinutos.Int32) }</span>
-										}
-										if album.FechaSalida.Valid {
-											<span><strong>Lanzamiento:</strong> { album.FechaSalida.Time.Format("2006-01-02") }</span>
-										}
-									</div>
-								}
-								if album.Observacion.Valid && album.Observacion.String != "" {
-									<p class="album-observation">"{ album.Observacion.String }"</p>
-								}
-								if album.LinkEscucha.Valid && album.LinkEscucha.String != "" {
-									<a href={ templ.SafeURL(album.LinkEscucha.String) } target="_blank" rel="noopener noreferrer" class="album-link">▶ Escuchar álbum</a>
-								}
-							</div>
-						</div>
-						<div class="album-footer">
-							<span class="album-id">{ fmt.Sprintf("#%d", album.ID) }</span>
-							<div class="album-actions">
-								<button
-									type="button"
-									class="btn btn-delete"
-									hx-delete={ fmt.Sprintf("/albums/%d", album.ID) }
-									hx-target="closest article"
-									hx-swap="outerHTML"
-									hx-confirm={ fmt.Sprintf("¿Estás seguro de que querés eliminar el álbum %q?", album.Titulo) }
-								>
-									Eliminar
-								</button>
-							</div>
-						</div>
-					</article>
+					@AlbumCard(album, isOwner)
 				}
 			}
 		</div>
 	</section>
 }
 
+templ AlbumCard(album sqlc.Album, isOwner bool) {
+	<article id={ fmt.Sprintf("album-card-%d", album.ID) } class="album-card">
+		<div>
+			if initialCoverURL(album) != "" {
+				<div
+					class="cover-wrapper"
+					data-portada={ album.Portada.String }
+					data-contraportada={ album.Contraportada.String }
+					data-showing={ initialCoverShowing(album) }
+				>
+					<img
+						src={ initialCoverURL(album) }
+						alt={ fmt.Sprintf("%s de %s", initialCoverLabel(album), album.Titulo) }
+						class="album-cover"
+						onerror="this.closest('.cover-wrapper').style.display='none'"
+					/>
+					<span class="cover-label">{ initialCoverLabel(album) }</span>
+					if hasBothCovers(album) {
+						<button type="button" class="cover-arrow cover-arrow-left" title="Cambiar entre Portada y Contraportada" aria-label="Imagen anterior">&#10094;</button>
+						<button type="button" class="cover-arrow cover-arrow-right" title="Cambiar entre Portada y Contraportada" aria-label="Siguiente imagen">&#10095;</button>
+					}
+				</div>
+			}
+			<div class="album-body">
+				<div class="album-header">
+					<h3 class="album-title">{ album.Titulo }</h3>
+					<span class="album-badge">{ album.Genero }</span>
+				</div>
+				<p class="album-band">{ album.Banda }</p>
+				if album.Productor.Valid || album.ListaArtistas.Valid || album.DuracionMinutos.Valid || album.FechaSalida.Valid {
+					<div class="album-details">
+						if album.Productor.Valid && album.Productor.String != "" {
+							<span><strong>Productor:</strong> { album.Productor.String }</span>
+						}
+						if album.ListaArtistas.Valid && album.ListaArtistas.String != "" {
+							<span><strong>Artistas:</strong> { album.ListaArtistas.String }</span>
+						}
+						if album.DuracionMinutos.Valid && album.DuracionMinutos.Int32 > 0 {
+							<span><strong>Duración:</strong> { fmt.Sprintf("%d min", album.DuracionMinutos.Int32) }</span>
+						}
+						if album.FechaSalida.Valid {
+							<span><strong>Lanzamiento:</strong> { album.FechaSalida.Time.Format("2006-01-02") }</span>
+						}
+					</div>
+				}
+				if album.Observacion.Valid && album.Observacion.String != "" {
+					<p class="album-observation">"{ album.Observacion.String }"</p>
+				}
+				if album.LinkEscucha.Valid && album.LinkEscucha.String != "" {
+					<a href={ templ.SafeURL(album.LinkEscucha.String) } target="_blank" rel="noopener noreferrer" class="album-link">▶ Escuchar álbum</a>
+				}
+			</div>
+		</div>
+		<div class="album-footer">
+			<span class="album-id">{ fmt.Sprintf("#%d", album.ID) }</span>
+			if isOwner {
+				<div class="album-actions">
+					<button
+						type="button"
+						class="btn btn-edit"
+						hx-get={ fmt.Sprintf("/albums/%d/edit", album.ID) }
+						hx-target="#edit-modal-container"
+						hx-swap="innerHTML"
+					>
+						Editar
+					</button>
+					<button
+						type="button"
+						class="btn btn-delete"
+						hx-delete={ fmt.Sprintf("/albums/%d", album.ID) }
+						hx-target="closest article"
+						hx-swap="outerHTML"
+						hx-confirm={ fmt.Sprintf("¿Estás seguro de que querés eliminar el álbum %q?", album.Titulo) }
+					>
+						Eliminar
+					</button>
+				</div>
+			}
+		</div>
+	</article>
+}
+
+templ AlbumEditCard(album sqlc.Album) {
+	<div
+		class="popup-backdrop"
+		onclick="if(event.target === this) document.getElementById('edit-modal-container').innerHTML = ''"
+	>
+		<div class="popup-wrapper">
+			<div class="popup-tab">Editar Álbum #{ fmt.Sprint(album.ID) }</div>
+			<div class="popup-box">
+				<form
+					class="popup-form"
+					hx-put={ fmt.Sprintf("/albums/%d", album.ID) }
+					hx-target={ fmt.Sprintf("#album-card-%d", album.ID) }
+					hx-swap="outerHTML"
+					hx-on::after-request="if(event.detail.successful) document.getElementById('edit-modal-container').innerHTML = ''"
+				>
+					<div class="popup-fields">
+						<div class="form-group">
+							<label>Título <span class="required">*</span></label>
+							<input type="text" name="titulo" value={ album.Titulo } required maxlength="150"/>
+						</div>
+						<div class="form-group">
+							<label>Banda / Artista <span class="required">*</span></label>
+							<input type="text" name="banda" value={ album.Banda } required maxlength="150"/>
+						</div>
+						<div class="form-group">
+							<label>Género <span class="required">*</span></label>
+							<input type="text" name="genero" value={ album.Genero } required maxlength="100"/>
+						</div>
+						<div class="popup-two-cols">
+							<div class="form-group">
+								<label>Productor</label>
+								<input type="text" name="productor" value={ album.Productor.String } maxlength="150"/>
+							</div>
+							<div class="form-group">
+								<label>Lista de Artistas</label>
+								<input type="text" name="lista_artistas" value={ album.ListaArtistas.String } maxlength="150"/>
+							</div>
+							<div class="form-group">
+								<label>Duración (minutos)</label>
+								<input type="number" name="duracion_minutos" value={ formatDurationValue(album) } min="1"/>
+							</div>
+							<div class="form-group">
+								<label>Fecha de Salida</label>
+								<input type="date" name="fecha_salida" value={ formatDateValue(album) }/>
+							</div>
+							<div class="form-group">
+								<label>URL de Portada</label>
+								<input type="url" name="portada" value={ album.Portada.String } maxlength="255"/>
+							</div>
+							<div class="form-group">
+								<label>URL de Contraportada</label>
+								<input type="url" name="contraportada" value={ album.Contraportada.String } maxlength="255"/>
+							</div>
+						</div>
+						<div class="form-group">
+							<label>Link para Escuchar</label>
+							<input type="url" name="link_escucha" value={ album.LinkEscucha.String } maxlength="500"/>
+						</div>
+						<div class="form-group">
+							<label>Observación / Reseña</label>
+							<textarea name="observacion" rows="2" maxlength="1000">{ album.Observacion.String }</textarea>
+						</div>
+					</div>
+					<div class="popup-submit-row">
+						<button type="submit" class="popup-submit-btn">
+							Guardar cambios
+						</button>
+					</div>
+				</form>
+			</div>
+			<div class="popup-close-row">
+				<button
+					type="button"
+					class="popup-close-pill"
+					onclick="document.getElementById('edit-modal-container').innerHTML = ''"
+				>
+					&#10005; Cerrar
+				</button>
+			</div>
+		</div>
+	</div>
+}
+
+templ UserSearchResults(users []sqlc.SearchUsersRow, query string) {
+	if query != "" {
+		<div class="search-results-list">
+			if len(users) == 0 {
+				<div class="search-result-empty">No se encontraron usuarios para "{ query }"</div>
+			} else {
+				for _, u := range users {
+					<a href={ templ.SafeURL(fmt.Sprintf("/u/%s", u.Username)) } class="search-result-item">
+						<span>👤 <strong>{ "@" + u.Username }</strong></span>
+						<span class="search-result-action">Ver álbumes →</span>
+					</a>
+				}
+			}
+		</div>
+	}
+}

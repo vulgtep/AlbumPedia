@@ -1,0 +1,57 @@
+package views
+
+templ LoginPage(errorMsg string) {
+	@Layout("Iniciar Sesión - AlbumPedia", nil) {
+		<section class="card auth-card">
+			<h2>Iniciar Sesión</h2>
+			<p class="auth-subtitle">Ingresá a tu cuenta para administrar tu colección de álbumes.</p>
+			if errorMsg != "" {
+				<div class="status-message error">{ errorMsg }</div>
+			}
+			<form method="POST" action="/login" class="auth-form">
+				<div class="form-group">
+					<label for="login-username">Nombre de usuario <span class="required">*</span></label>
+					<input type="text" id="login-username" name="username" placeholder="Ej: spinetta" required maxlength="50" autocomplete="username"/>
+				</div>
+				<div class="form-group">
+					<label for="login-password">Contraseña <span class="required">*</span></label>
+					<input type="password" id="login-password" name="password" placeholder="Tu contraseña" required autocomplete="current-password"/>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary full-btn">Ingresar</button>
+				</div>
+			</form>
+			<p class="auth-footer">
+				¿Todavía no tenés cuenta? <a href="/register">Registrate acá</a>
+			</p>
+		</section>
+	}
+}
+
+templ RegisterPage(errorMsg string) {
+	@Layout("Crear Cuenta - AlbumPedia", nil) {
+		<section class="card auth-card">
+			<h2>Crear Cuenta</h2>
+			<p class="auth-subtitle">Registrate con un nombre de usuario y contraseña para armar tu propio catálogo.</p>
+			if errorMsg != "" {
+				<div class="status-message error">{ errorMsg }</div>
+			}
+			<form method="POST" action="/register" class="auth-form">
+				<div class="form-group">
+					<label for="reg-username">Nombre de usuario <span class="required">*</span></label>
+					<input type="text" id="reg-username" name="username" placeholder="Ej: charly_garcia" required minlength="3" maxlength="50" autocomplete="username"/>
+				</div>
+				<div class="form-group">
+					<label for="reg-password">Contraseña <span class="required">*</span></label>
+					<input type="password" id="reg-password" name="password" placeholder="Mínimo 4 caracteres" required minlength="4" autocomplete="new-password"/>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary full-btn">Crear Cuenta</button>
+				</div>
+			</form>
+			<p class="auth-footer">
+				¿Ya tenés una cuenta? <a href="/login">Iniciá sesión</a>
+			</p>
+		</section>
+	}
+}

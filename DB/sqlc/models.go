@@ -6,10 +6,12 @@ package sqlc
 
 import (
 	"database/sql"
+	"time"
 )
 
 type Album struct {
 	ID              int32          `json:"id"`
+	UserID          int32          `json:"user_id"`
 	Titulo          string         `json:"titulo"`
 	Genero          string         `json:"genero"`
 	Banda           string         `json:"banda"`
@@ -21,4 +23,11 @@ type Album struct {
 	FechaSalida     sql.NullTime   `json:"fecha_salida"`
 	LinkEscucha     sql.NullString `json:"link_escucha"`
 	Observacion     sql.NullString `json:"observacion"`
+}
+
+type User struct {
+	ID           int32     `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"password_hash"`
+	CreatedAt    time.Time `json:"created_at"`
 }

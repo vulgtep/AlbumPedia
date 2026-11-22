@@ -1,8 +1,11 @@
 package views
 
-import "albumPedia.com/albumPedia/DB/sqlc"
+import (
+	"fmt"
+	"albumPedia.com/albumPedia/DB/sqlc"
+)
 
-templ Layout(title string) {
+templ Layout(title string, currentUser *sqlc.User) {
 	<!DOCTYPE html>
 	<html lang="es" data-theme="light">
 		<head>
@@ -10,35 +13,86 @@ templ Layout(title string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title }</title>
 			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
-			<link rel="stylesheet" type="text/css" href="/static/styles.css"/>
+			<link rel="stylesheet" type="text/css" href="/static/styles.css?v=3"/>
 			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
 		</head>
 		<body>
 			<header class="header">
-				<h1 id="titulo">Album<span class="resaltar">pedia</span></h1>
+				<div class="navbar">
+					<a href="/" class="brand-link">
+						<h1 id="titulo">Album<span class="resaltar">pedia</span></h1>
+					</a>
+					if currentUser != nil {
+						<div class="search-box">
+							<input
+								name="q"
+								class="user-search-input"
+								placeholder=" Buscar usuario por nombre..."
+								autocomplete="off"
+								hx-get="/users/search"
+								hx-trigger="input changed delay:200ms, search"
+								hx-target="#user-search-results"
+							/>
+							<div id="user-search-results" class="search-dropdown"></div>
+						</div>
+						<div class="nav-user">
+							<a href="/" class="user-pill" title="Ir a mi perfil">
+								👤 { "@" + currentUser.Username }
+							</a>
+							<form method="POST" action="/logout" class="logout-form">
+								<button type="submit" class="btn btn-outline btn-sm">Salir</button>
+							</form>
+						</div>
+					}
+				</div>
 				<p id="texto">
 					Nuestra intención con esta página es registrar nuestros álbumes de música favoritos.
-					Administrá tu colección agregando, consultando o eliminando discos.
+					Administrá tu colección o explorá los perfiles de otros usuarios.
 				</p>
 			</header>
 			<main class="container">
 				{ children... }
 			</main>
+			<div id="edit-modal-container"></div>
 			@coverSwitchScript()
 		</body>
 	</html>
 }
 
-templ HomePage(albums []sqlc.Album) {
-	@Layout("AlbumPedia - Catálogo de Álbumes") {
-		@EntityForm()
-		@EntityList(albums)
+templ HomePage(currentUser *sqlc.User, profileUser sqlc.User, albums []sqlc.Album, isOwner bool) {
+	@Layout(fmt.Sprintf("AlbumPedia - Perfil de @%s", profileUser.Username), currentUser) {
+		if isOwner {
+			@EntityForm()
+		} else {
+			<section class="card profile-banner">
+				<div class="profile-banner-info">
+					<h2>Colección de <span class="resaltar">{ "@" + profileUser.Username }</span></h2>
+					<p>Estás viendo el perfil público de { "@" + profileUser.Username } en modo lectura.</p>
+				</div>
+				<a href="/" class="btn btn-primary">← Volver a mi colección</a>
+			</section>
+		}
+		@EntityList(albums, isOwner, profileUser.Username)
 	}
 }
 
 templ coverSwitchScript() {
 	<script>
+		document.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape') {
+				const modalContainer = document.getElementById('edit-modal-container');
+				if (modalContainer) modalContainer.innerHTML = '';
+			}
+		});
+
 		document.addEventListener('click', (event) => {
+			// Cerrar desplegable de búsqueda al hacer clic fuera
+			const searchBox = event.target.closest('.search-box');
+			if (!searchBox) {
+				const dropdown = document.getElementById('user-search-results');
+				if (dropdown) dropdown.innerHTML = '';
+			}
+
 			const arrowBtn = event.target.closest('.cover-arrow');
 			if (!arrowBtn) return;
 
@@ -87,4 +141,3 @@ templ coverSwitchScript() {
 		});
 	</script>
 }
-
