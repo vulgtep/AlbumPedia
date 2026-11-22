@@ -3,6 +3,8 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -10,9 +12,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
+func getTestEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
+}
+
 func setupTestDB(t *testing.T) (*sqlc.Queries, *sql.DB) {
-	// conectamos a la base de datos
-	connString := "postgres://postgres:postgres@localhost:5432/albumpedia?sslmode=disable"
+	// conectamos a la base de datos usando variables de entorno
+	dbHost := getTestEnv("DB_HOST", "localhost")
+	dbPort := getTestEnv("DB_PORT", "5432")
+	dbUser := getTestEnv("DB_USER", getTestEnv("POSTGRES_USER", "postgres"))
+	dbPassword := getTestEnv("DB_PASSWORD", getTestEnv("POSTGRES_PASSWORD", "postgres"))
+	dbName := getTestEnv("DB_NAME", getTestEnv("POSTGRES_DB", "albumpedia"))
+
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		t.Fatalf("Fallo al conectar a la DB de prueba: %v", err)

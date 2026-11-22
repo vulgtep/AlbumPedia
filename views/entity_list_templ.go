@@ -63,7 +63,7 @@ func EntityList(albums []sqlc.Album) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"list-section\"><div class=\"list-header\"><h2>Colección de Álbumes</h2></div><div id=\"albums-container\" class=\"albums-grid\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section id=\"albums-list\" class=\"list-section\"><div class=\"list-header\"><h2>Colección de Álbumes</h2></div><div id=\"albums-container\" class=\"albums-grid\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -348,63 +348,39 @@ func EntityList(albums []sqlc.Album) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</span><div class=\"album-actions\"><form method=\"POST\" action=\"/albums/delete\" class=\"delete-form\"><input type=\"hidden\" name=\"id\" value=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "</span><div class=\"album-actions\"><button type=\"button\" class=\"btn btn-delete\" hx-delete=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var18 string
-				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprint(album.ID))
+				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/albums/%d", album.ID))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_list.templ`, Line: 106, Col: 68}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_list.templ`, Line: 108, Col: 56}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\"> <button type=\"submit\" class=\"btn btn-delete\">Eliminar</button></form></div></div></article>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\" hx-target=\"closest article\" hx-swap=\"outerHTML\" hx-confirm=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var19 string
+				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("¿Estás seguro de que querés eliminar el álbum %q?", album.Titulo))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `views/entity_list.templ`, Line: 111, Col: 104}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\">Eliminar</button></div></div></article>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "</div>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = coverSwitchScript().Render(ctx, templ_7745c5c3_Buffer)
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</section>")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		return nil
-	})
-}
-
-func coverSwitchScript() templ.Component {
-	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
-		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
-		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
-			return templ_7745c5c3_CtxErr
-		}
-		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
-		if !templ_7745c5c3_IsBuffer {
-			defer func() {
-				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
-				if templ_7745c5c3_Err == nil {
-					templ_7745c5c3_Err = templ_7745c5c3_BufErr
-				}
-			}()
-		}
-		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var19 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var19 == nil {
-			templ_7745c5c3_Var19 = templ.NopComponent
-		}
-		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "<script>\n\t\tdocument.addEventListener('DOMContentLoaded', () => {\n\t\t\tconst albumsContainer = document.getElementById('albums-container');\n\t\t\tif (!albumsContainer) return;\n\n\t\t\talbumsContainer.addEventListener('click', (event) => {\n\t\t\t\tconst arrowBtn = event.target.closest('.cover-arrow');\n\t\t\t\tif (!arrowBtn) return;\n\n\t\t\t\tconst wrapper = arrowBtn.closest('.cover-wrapper');\n\t\t\t\tif (!wrapper || wrapper.dataset.animating === 'true') return;\n\n\t\t\t\tconst img = wrapper.querySelector('.album-cover');\n\t\t\t\tconst label = wrapper.querySelector('.cover-label');\n\t\t\t\tconst currentShowing = wrapper.dataset.showing;\n\t\t\t\tconst isNext = arrowBtn.classList.contains('cover-arrow-right');\n\t\t\t\tconst slideOffset = isNext ? -28 : 28;\n\n\t\t\t\tconst nextShowing = currentShowing === 'portada' ? 'contraportada' : 'portada';\n\t\t\t\tconst nextSrc = nextShowing === 'contraportada'\n\t\t\t\t\t? wrapper.dataset.contraportada\n\t\t\t\t\t: wrapper.dataset.portada;\n\t\t\t\tconst nextLabel = nextShowing === 'contraportada' ? 'Contraportada' : 'Portada';\n\n\t\t\t\twrapper.dataset.animating = 'true';\n\n\t\t\t\tconst outAnim = img.animate(\n\t\t\t\t\t[\n\t\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' },\n\t\t\t\t\t\t{ opacity: 0, transform: `translateX(${slideOffset}px) scale(0.95)` }\n\t\t\t\t\t],\n\t\t\t\t\t{ duration: 180, easing: 'ease-in', fill: 'forwards' }\n\t\t\t\t);\n\n\t\t\t\toutAnim.onfinish = () => {\n\t\t\t\t\timg.src = nextSrc;\n\t\t\t\t\twrapper.dataset.showing = nextShowing;\n\t\t\t\t\tif (label) label.textContent = nextLabel;\n\n\t\t\t\t\tconst inAnim = img.animate(\n\t\t\t\t\t\t[\n\t\t\t\t\t\t\t{ opacity: 0, transform: `translateX(${-slideOffset}px) scale(0.95)` },\n\t\t\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' }\n\t\t\t\t\t\t],\n\t\t\t\t\t\t{ duration: 220, easing: 'ease-out', fill: 'forwards' }\n\t\t\t\t\t);\n\n\t\t\t\t\tinAnim.onfinish = () => {\n\t\t\t\t\t\twrapper.dataset.animating = 'false';\n\t\t\t\t\t};\n\t\t\t\t};\n\t\t\t});\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "</div></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

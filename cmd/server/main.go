@@ -13,14 +13,22 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func main() {
-	// 1. Establecer y Gestionar la Conexión
-	dbHost := os.Getenv("DB_HOST")
-	if dbHost == "" {
-		dbHost = "localhost"
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
+	return fallback
+}
 
-	connStr := fmt.Sprintf("postgres://postgres:postgres@%s:5432/albumpedia?sslmode=disable", dbHost)
+func main() {
+	// 1. Establecer y Gestionar la Conexión mediante variables de entorno
+	dbHost := getEnv("DB_HOST", "localhost")
+	dbPort := getEnv("DB_PORT", "5432")
+	dbUser := getEnv("DB_USER", getEnv("POSTGRES_USER", "postgres"))
+	dbPassword := getEnv("DB_PASSWORD", getEnv("POSTGRES_PASSWORD", ""))
+	dbName := getEnv("DB_NAME", getEnv("POSTGRES_DB", "albumpedia"))
+
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal("Error conectando a la base de datos: ", err)
@@ -48,7 +56,7 @@ func main() {
 
 	http.HandleFunc("/", server.HomeHandler)
 	http.HandleFunc("/albums", server.CreateAlbumHandler)
-	http.HandleFunc("/albums/delete", server.DeleteAlbumHandler)
+	http.HandleFunc("/albums/", server.DeleteAlbumHandler)
 
 	// 6. Iniciar el servidor HTTP
 	fmt.Println("Servidor SSR escuchando en http://localhost:8080")

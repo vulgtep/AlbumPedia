@@ -44,7 +44,7 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css\"><link rel=\"stylesheet\" type=\"text/css\" href=\"/static/styles.css\"></head><body><header class=\"header\"><h1 id=\"titulo\">Album<span class=\"resaltar\">pedia</span></h1><p id=\"texto\">Nuestra intención con esta página es registrar nuestros álbumes de música favoritos. Administrá tu colección agregando, consultando o eliminando discos.</p></header><main class=\"container\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css\"><link rel=\"stylesheet\" type=\"text/css\" href=\"/static/styles.css\"><script src=\"https://unpkg.com/htmx.org@2.0.4\"></script></head><body><header class=\"header\"><h1 id=\"titulo\">Album<span class=\"resaltar\">pedia</span></h1><p id=\"texto\">Nuestra intención con esta página es registrar nuestros álbumes de música favoritos. Administrá tu colección agregando, consultando o eliminando discos.</p></header><main class=\"container\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -52,7 +52,15 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</main></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</main>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = coverSwitchScript().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -97,7 +105,7 @@ func HomePage(albums []sqlc.Album) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, " ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, " ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -108,6 +116,35 @@ func HomePage(albums []sqlc.Album) templ.Component {
 			return nil
 		})
 		templ_7745c5c3_Err = Layout("AlbumPedia - Catálogo de Álbumes").Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func coverSwitchScript() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<script>\n\t\tdocument.addEventListener('click', (event) => {\n\t\t\tconst arrowBtn = event.target.closest('.cover-arrow');\n\t\t\tif (!arrowBtn) return;\n\n\t\t\tconst wrapper = arrowBtn.closest('.cover-wrapper');\n\t\t\tif (!wrapper || wrapper.dataset.animating === 'true') return;\n\n\t\t\tconst img = wrapper.querySelector('.album-cover');\n\t\t\tconst label = wrapper.querySelector('.cover-label');\n\t\t\tconst currentShowing = wrapper.dataset.showing;\n\t\t\tconst isNext = arrowBtn.classList.contains('cover-arrow-right');\n\t\t\tconst slideOffset = isNext ? -28 : 28;\n\n\t\t\tconst nextShowing = currentShowing === 'portada' ? 'contraportada' : 'portada';\n\t\t\tconst nextSrc = nextShowing === 'contraportada'\n\t\t\t\t? wrapper.dataset.contraportada\n\t\t\t\t: wrapper.dataset.portada;\n\t\t\tconst nextLabel = nextShowing === 'contraportada' ? 'Contraportada' : 'Portada';\n\n\t\t\twrapper.dataset.animating = 'true';\n\n\t\t\tconst outAnim = img.animate(\n\t\t\t\t[\n\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' },\n\t\t\t\t\t{ opacity: 0, transform: `translateX(${slideOffset}px) scale(0.95)` }\n\t\t\t\t],\n\t\t\t\t{ duration: 180, easing: 'ease-in', fill: 'forwards' }\n\t\t\t);\n\n\t\t\toutAnim.onfinish = () => {\n\t\t\t\timg.src = nextSrc;\n\t\t\t\twrapper.dataset.showing = nextShowing;\n\t\t\t\tif (label) label.textContent = nextLabel;\n\n\t\t\t\tconst inAnim = img.animate(\n\t\t\t\t\t[\n\t\t\t\t\t\t{ opacity: 0, transform: `translateX(${-slideOffset}px) scale(0.95)` },\n\t\t\t\t\t\t{ opacity: 1, transform: 'translateX(0) scale(1)' }\n\t\t\t\t\t],\n\t\t\t\t\t{ duration: 220, easing: 'ease-out', fill: 'forwards' }\n\t\t\t\t);\n\n\t\t\t\tinAnim.onfinish = () => {\n\t\t\t\t\twrapper.dataset.animating = 'false';\n\t\t\t\t};\n\t\t\t};\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

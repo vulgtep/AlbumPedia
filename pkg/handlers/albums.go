@@ -42,7 +42,7 @@ func (s *Server) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// POST /albums - Parsea el formulario HTML, crea el álbum en BD y aplica Post/Redirect/Get (PRG)
+// POST /albums - Crea el álbum en BD y devuelve el fragmento EntityList para HTMX
 func (s *Server) CreateAlbumHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -82,23 +82,26 @@ func (s *Server) CreateAlbumHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Patrón Post/Redirect/Get (PRG)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	albums, err := s.Queries.ListAlbums(r.Context())
+	if err != nil {
+		http.Error(w, "Error obteniendo álbumes: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := views.EntityList(albums).Render(r.Context(), w); err != nil {
+		http.Error(w, "Error renderizando la lista de álbumes", http.StatusInternalServerError)
+	}
 }
 
-// POST /albums/delete - Elimina un álbum por ID y redirige a la página principal (PRG)
+// DELETE /albums/{id} - Elimina un álbum por ID y devuelve 200 OK vacío para HTMX
 func (s *Server) DeleteAlbumHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Formulario inválido", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(strings.TrimSpace(r.FormValue("id")))
+	idStr := strings.TrimSpace(strings.TrimPrefix(r.URL.Path, "/albums/"))
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "ID de álbum inválido", http.StatusBadRequest)
 		return
@@ -109,7 +112,7 @@ func (s *Server) DeleteAlbumHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	w.WriteHeader(http.StatusOK)
 }
 
 func parseNullString(val string) sql.NullString {

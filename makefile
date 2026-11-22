@@ -1,3 +1,9 @@
+-include .env
+export
+
+POSTGRES_USER ?= postgres
+POSTGRES_DB ?= albumpedia
+
 .PHONY: build run sqlc templ start docker-build docker-run db-up db-down db-shell db-wait test-setup test-run make-test
 
 sqlc:
@@ -27,12 +33,12 @@ db-down:
 	docker compose down -v
 
 db-shell:
-	docker compose exec db psql -U postgres -d albumpedia
+	docker compose exec db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
 db-wait:
 	@echo "Esperando a que la base de datos esté lista..."
 	@for i in 1 2 3 4 5 6 7 8 9 10; do \
-		docker compose exec db pg_isready -U postgres > /dev/null 2>&1 && echo "¡DB Lista!" && break || (echo "Esperando..." && sleep 2); \
+		docker compose exec db pg_isready -U $(POSTGRES_USER) -d $(POSTGRES_DB) > /dev/null 2>&1 && echo "¡DB Lista!" && break || (echo "Esperando..." && sleep 2); \
 	done
 
 # 1) Tareas previas

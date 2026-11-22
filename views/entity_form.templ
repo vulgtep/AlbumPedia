@@ -3,7 +3,13 @@ package views
 templ EntityForm() {
 	<section class="card form-section">
 		<h2 id="form-title">Agregar Nuevo Álbum</h2>
-		<form id="album-form" method="POST" action="/albums">
+		<form
+			id="album-form"
+			hx-post="/albums"
+			hx-target="#albums-list"
+			hx-swap="outerHTML"
+			hx-on::after-request="if(event.detail.successful) this.reset()"
+		>
 			<div class="form-grid">
 				<div class="form-group">
 					<label for="input-titulo">Título <span class="required">*</span></label>

@@ -1,2 +1,12 @@
+# Variables de entorno y secretos (NUNCA subir al repositorio)
+.env
+.env.*
+!.env.example
+
+# Binarios compilados
+albumpedia
+mi-servidor
+
+# Archivos generados o locales
 makefilemio.txt
-DB\sqlc
+DB/sqlc

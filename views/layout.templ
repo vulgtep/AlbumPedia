@@ -11,6 +11,7 @@ templ Layout(title string) {
 			<title>{ title }</title>
 			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"/>
 			<link rel="stylesheet" type="text/css" href="/static/styles.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
 		</head>
 		<body>
 			<header class="header">
@@ -23,6 +24,7 @@ templ Layout(title string) {
 			<main class="container">
 				{ children... }
 			</main>
+			@coverSwitchScript()
 		</body>
 	</html>
 }
@@ -32,5 +34,57 @@ templ HomePage(albums []sqlc.Album) {
 		@EntityForm()
 		@EntityList(albums)
 	}
+}
+
+templ coverSwitchScript() {
+	<script>
+		document.addEventListener('click', (event) => {
+			const arrowBtn = event.target.closest('.cover-arrow');
+			if (!arrowBtn) return;
+
+			const wrapper = arrowBtn.closest('.cover-wrapper');
+			if (!wrapper || wrapper.dataset.animating === 'true') return;
+
+			const img = wrapper.querySelector('.album-cover');
+			const label = wrapper.querySelector('.cover-label');
+			const currentShowing = wrapper.dataset.showing;
+			const isNext = arrowBtn.classList.contains('cover-arrow-right');
+			const slideOffset = isNext ? -28 : 28;
+
+			const nextShowing = currentShowing === 'portada' ? 'contraportada' : 'portada';
+			const nextSrc = nextShowing === 'contraportada'
+				? wrapper.dataset.contraportada
+				: wrapper.dataset.portada;
+			const nextLabel = nextShowing === 'contraportada' ? 'Contraportada' : 'Portada';
+
+			wrapper.dataset.animating = 'true';
+
+			const outAnim = img.animate(
+				[
+					{ opacity: 1, transform: 'translateX(0) scale(1)' },
+					{ opacity: 0, transform: `translateX(${slideOffset}px) scale(0.95)` }
+				],
+				{ duration: 180, easing: 'ease-in', fill: 'forwards' }
+			);
+
+			outAnim.onfinish = () => {
+				img.src = nextSrc;
+				wrapper.dataset.showing = nextShowing;
+				if (label) label.textContent = nextLabel;
+
+				const inAnim = img.animate(
+					[
+						{ opacity: 0, transform: `translateX(${-slideOffset}px) scale(0.95)` },
+						{ opacity: 1, transform: 'translateX(0) scale(1)' }
+					],
+					{ duration: 220, easing: 'ease-out', fill: 'forwards' }
+				);
+
+				inAnim.onfinish = () => {
+					wrapper.dataset.animating = 'false';
+				};
+			};
+		});
+	</script>
 }
 
